@@ -1,4 +1,4 @@
-package online.themixhub.demo.helloworld;
+package online.themixhub.demo.pages;
 
 import javax.sql.DataSource;
 

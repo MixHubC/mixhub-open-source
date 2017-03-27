@@ -9,7 +9,7 @@ import org.jooby.test.MockRouter;
 import org.junit.ClassRule;
 import org.junit.Test;
 
-import online.themixhub.demo.helloworld.HelloWorld;
+import online.themixhub.demo.Demo;
 
 /**
  * @author jooby generator
@@ -21,7 +21,7 @@ public class AppTest {
    * remove the static modifier and replace the {@link ClassRule} annotation with {@link Rule}.
    */
   @ClassRule
-  public static JoobyRule app = new JoobyRule(new HelloWorld());
+  public static JoobyRule app = new JoobyRule(new Demo());
 
   @Test
   public void integrationTest() {
@@ -35,7 +35,7 @@ public class AppTest {
 
   @Test
   public void unitTest() throws Throwable {
-    String result = new MockRouter(new HelloWorld())
+    String result = new MockRouter(new Demo())
         .get("/");
 
     assertEquals("Hello World!", result);

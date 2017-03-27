@@ -21,7 +21,7 @@
     <jooby.version>1.1.0</jooby.version>
 
     <!-- Startup class -->
-    <application.class>online.themixhub.demo.helloworld.HelloWorld</application.class>
+    <application.class>online.themixhub.demo.Demo</application.class>
   </properties>
 
   <dependencies>
