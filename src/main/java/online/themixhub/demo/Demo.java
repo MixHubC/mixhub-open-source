@@ -1,8 +1,13 @@
-package online.themixhub.demo.helloworld;
+package online.themixhub.demo;
 
 import org.jooby.Jooby;
 import org.jooby.Results;
 import org.jooby.hbs.Hbs;
+
+import online.themixhub.MiscUtils;
+import online.themixhub.demo.pages.Download;
+import online.themixhub.demo.pages.Index;
+import online.themixhub.demo.pages.Upload;
 
 /**
  * An example Jooby App using the MVC API
@@ -10,7 +15,7 @@ import org.jooby.hbs.Hbs;
  * @author The Mix Hub Online
  */
 
-public class HelloWorld extends Jooby {
+public class Demo extends Jooby {
 
 	{
 		/**
@@ -42,7 +47,8 @@ public class HelloWorld extends Jooby {
 					
 					CriticalDiskLogger.logException(err); //log all errors to disk to review at a later date
 				}*/
-				rsp.send(Results.html("500"));
+				rsp.send(Results.html("500").
+						put("stacktrace", MiscUtils.exceptionToString(err))); //NOTE, this is extremely unsafe for production, add a check in the future
 			}
 		});
 		
@@ -60,6 +66,8 @@ public class HelloWorld extends Jooby {
 		 * Define pages
 		 */
 		use(Index.class);
+		use(Download.class);
+		use(Upload.class);
 		
 		/**
 		 * Schedule tasks
@@ -69,7 +77,7 @@ public class HelloWorld extends Jooby {
 	
 	public static void main(final String[] args) {
 		//((Logger)LoggerFactory.getLogger(Logger.ROOT_LOGGER_NAME)).setLevel(Level.DEBUG);
-		HelloWorld panel = new HelloWorld();
+		Demo panel = new Demo();
 		panel.start();
 	}
 
