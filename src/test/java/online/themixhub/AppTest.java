@@ -41,7 +41,7 @@ public class AppTest {
 
   @Test
   public void firstTest() {
-    assertTrue(true); // just seeing if it works
+    assertTrue(true); // just seeing if JUnit works
   }
 
 }
