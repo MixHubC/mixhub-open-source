@@ -12,7 +12,7 @@ import org.junit.Test;
 
 import online.themixhub.demo.Demo;
 
-public class AppTest // INTENTIONAL BREAK
+public class AppTest {
 
   /**
    * One app/server for all the test of this class. If you want to start/stop a new server per test,
