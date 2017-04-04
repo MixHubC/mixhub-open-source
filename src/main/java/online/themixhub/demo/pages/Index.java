@@ -2,6 +2,7 @@ package online.themixhub.demo.pages;
 
 import javax.sql.DataSource;
 
+import online.themixhub.demo.utils.SessionUtils;
 import org.jooby.*;
 import org.jooby.mvc.*;
 
@@ -13,25 +14,18 @@ public class Index {
 	private DataSource ds;
 
 	 //for when we use SQL
-	/*@Inject
+	@Inject
 	public Index(DataSource ds) {
 		this.ds = ds;
-	}*/
+	}
 
 	@GET
 	public Result getPage(Request req) {
-		Result result = Results.html("index").
-			put("username", "username-goes-here!");
-		return result;
-		/*Sessions.handleSessionDestroy(req);
+		SessionUtils.handleSessionDestroy(req);
 		if (req.session().isSet("set")) {
-			int id = Integer.parseInt(req.session().get("id").value());
-			User user = MySQL.queryAccountFromID(ds, id);
-			
-			Result result = Results.html("client_about");
-			return result;
+			return Results.redirect("/dashboard");
 		} else {
-			return Results.redirect("/");
-		}*/
+			return Results.redirect("/login");
+		}
 	}
 }
