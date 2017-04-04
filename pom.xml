@@ -21,7 +21,7 @@
     <jooby.version>1.1.0</jooby.version>
 
     <!-- Startup class -->
-    <application.class>online.themixhub.demo.Demo</application.class>
+    <application.class>online.themixhub.demo.TheMixHubOnline</application.class>
   </properties>
 
   <dependencies>
@@ -50,13 +50,33 @@
       <scope>test</scope>
     </dependency>
 
-  
   <!-- Handlebars -->
-<dependency>
-  <groupId>org.jooby</groupId>
-  <artifactId>jooby-hbs</artifactId>
-  <version>1.1.0</version>
-</dependency>
+  <dependency>
+    <groupId>org.jooby</groupId>
+    <artifactId>jooby-hbs</artifactId>
+    <version>1.1.0</version>
+  </dependency>
+
+    <!-- JDBC -->
+    <dependency>
+    <groupId>org.jooby</groupId>
+    <artifactId>jooby-jdbc</artifactId>
+    <version>1.1.0</version>
+  </dependency>
+
+    <!-- MySQL Connector -->
+    <dependency>
+      <groupId>mysql</groupId>
+      <artifactId>mysql-connector-java</artifactId>
+    </dependency>
+
+    <!-- https://mvnrepository.com/artifact/org.springframework/spring-jdbc -->
+    <dependency>
+      <groupId>org.springframework</groupId>
+      <artifactId>spring-jdbc</artifactId>
+      <version>4.3.7.RELEASE</version>
+    </dependency>
+
 
   </dependencies>
 
