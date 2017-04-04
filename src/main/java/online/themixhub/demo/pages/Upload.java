@@ -202,22 +202,39 @@
    limitations under the License.
 */
 
-package online.themixhub.demo.pages.forms;
+package online.themixhub.demo.pages;
 
-import org.jooby.MediaType;
-import org.jooby.Upload;
+import java.io.File;
+import java.io.IOException;
 
-import java.util.List;
+import org.jooby.*;
+import org.jooby.mvc.*;
 
-public class JobCreationForm {
+import online.themixhub.MiscUtils;
+import online.themixhub.demo.pages.forms.UploadForm;
 
-	public String title;
-	public String comments;
-	public Upload file;
+@Path("/upload")
+public class Upload {
 
-	public List<MediaType> list;
-
-	public JobCreationForm(Upload file) {
-		this.file = file;
+	@GET
+	@POST
+	public Result getPage(Request req) throws IOException {
+		if(req.method().toLowerCase().equals("get")) {
+			Result result = Results.html("upload");
+			return result;
+		} else {
+			UploadForm uploadForm = req.form(UploadForm.class, "js", "html", "uri");
+			File moveTo = new File("demo_uploads" + File.separator + uploadForm.file.name());
+			if(moveTo.exists()) {
+				Result result = Results.html("upload_fail_exists");
+				return result;
+			} else {
+				uploadForm.file.file().renameTo(moveTo);
+				Result result = Results.html("upload_success").
+						put("file_name", uploadForm.file.name()).
+						put("file_size", MiscUtils.getStringSizeLengthFile(moveTo.length()));
+				return result;
+			}
+		}
 	}
 }
