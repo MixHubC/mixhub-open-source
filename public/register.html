@@ -1,19 +1,21 @@
 <html>
 <head>
-<title>The Mix Hub Online - Demo</title>
+<title>{{title}}</title>
 </head>
 <body>
+
+{{content}}
 <form action="/register" method="post"> </br>
   E-Mail: </br>
-  <input type="text" name="email"> </br>
+  <input type="text" name="email" value="{{email}}"> </br>
   Username: </br>
-  <input type="text" name="username"> </br>
+  <input type="text" name="username" value="{{username}}"> </br>
   Password: </br>
-  <input type="text" name="password"> </br>
+  <input type="text" name="password" value="{{password}}"> </br>
   First Name: </br>
-  <input type="text" name="firstname"> </br>
+  <input type="text" name="firstname" value="{{firstname}}"> </br>
   Last Name: </br>
-  <input type="text" name="lastname"> </br>
+  <input type="text" name="lastname" value="{{lastname}}"> </br>
   <input type="submit">
 </form>
 </body>

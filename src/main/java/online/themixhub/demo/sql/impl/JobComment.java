@@ -7,13 +7,13 @@ package online.themixhub.demo.sql.impl;
  */
 public class JobComment {
 
-    int id;
-    long date;
-	int reply_to_id;
-	int parent_account_id;
-	int parent_job_id;
-	String comment;
-	String filepaths; //CSV separated by ,
+	private int id;
+	private long date;
+	private int reply_to_id;
+	private int parent_account_id;
+	private int parent_job_id;
+	private String comment;
+	private String filepaths; //CSV separated by ,
 
     public int getId() {
         return id;

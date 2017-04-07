@@ -1,4 +1,4 @@
-package online.themixhub.demo.pages;
+package online.themixhub.demo.pages.html;
 
 import com.google.inject.Inject;
 import online.themixhub.demo.sql.impl.Account;
@@ -40,9 +40,6 @@ public class Register {
 		} else if(req.method().toLowerCase().equals("post")) {
 			RegisterForm registerForm = req.form(RegisterForm.class, "js", "html", "uri");
 
-			//do checks here if email is valid, password is secure, etc.
-			//NOTE: MySQL.createAccount only sees to see if the E-Mail is unique, we need to update it if we want to support username login (as usernames are not unique at this point)
-
 			Account newAccount = new Account();
 			newAccount.setRegister_ip(req.ip());
 			newAccount.setEmail(registerForm.email);
@@ -51,15 +48,29 @@ public class Register {
 			newAccount.setFirstname(registerForm.firstname);
 			newAccount.setLastname(registerForm.lastname);
 
+			String content = "";
+
+
+			//do checks here if email is valid, password is secure, etc.
+			//NOTE: MySQL.createAccount only sees to see if the E-Mail is unique, we need to update it if we want to support username login (as usernames are not unique at this point)
+
+
 			if(MySQL.getAccounts(ds).insert(newAccount)) {
-				Result result = Results.html("register_message").
-						put("message", "Success! You've register the account '" + registerForm.username + "'. <a href=\"/login\">Click here</a> to login!");
-				return result;
+				content = "Success! You've register the account '" + registerForm.username + "'. <a href=\"/login\">Click here</a> to login!";
 			} else {
-				Result result = Results.html("register_message").
-						put("message", "Error! This E-Mail is already in use...");
-				return result;
+				content = "Error! This E-Mail is already in use...";
 			}
+
+			Result result = Results.html("register").
+					put("content", content).
+					put("title", "The Mix Hub ONLINE - Demo").
+					put("email", registerForm.email).
+					put("username", registerForm.username).
+					put("password", registerForm.password).
+					put("firstname", registerForm.firstname).
+					put("lastname", registerForm.lastname);
+
+			return result;
 		}
 
 		return null;

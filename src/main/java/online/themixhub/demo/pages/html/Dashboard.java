@@ -1,4 +1,4 @@
-package online.themixhub.demo.pages;
+package online.themixhub.demo.pages.html;
 
 import com.google.inject.Inject;
 import online.themixhub.demo.sql.impl.Job;
@@ -49,7 +49,13 @@ public class Dashboard {
 	}
 
 	public Result getPageAdmin(Request req, Account account) {
-		Result result = Results.html("dashboard_admin");
+		Result result = Results.html("dashboard_page_template").
+				put("content", "Coming Soon!").
+				put("title", "The Mix Hub Online - Dashboard").
+				put("full_name", account.getFirstname() + " " + account.getLastname()).
+				put("sidenav", SideNavigation.generate(req, account)).
+				put("notification_count", Notifications.count(req, account)).
+				put("notification_list", Notifications.generate(req, account));
 		return result;
 	}
 
@@ -108,9 +114,13 @@ public class Dashboard {
 		}
 
 		if(engineerJobs == null) {
-			Result result = Results.html("dashboard_engineer").
-					put("jobs_accepted", "You currently have no jobs claimed!").
-					put("job_queue", unclaimedSB.toString());
+			Result result = Results.html("dashboard_page_template").
+					put("content", "You currently have no jobs claimed!" + unclaimedSB.toString()).
+					put("title", "The Mix Hub Online - Dashboard").
+					put("full_name", account.getFirstname() + " " + account.getLastname()).
+					put("sidenav", SideNavigation.generate(req, account)).
+					put("notification_count", Notifications.count(req, account)).
+					put("notification_list", Notifications.generate(req, account));
 			return result;
 		} else {
 			engineerSB.append("Your Claimed Jobs:</br>");
@@ -154,9 +164,14 @@ public class Dashboard {
 			}
 			engineerSB.append("</table>");
 
-			Result result = Results.html("dashboard_engineer").
-					put("jobs_accepted", engineerSB.toString()).
-					put("job_queue", unclaimedSB.toString());
+
+			Result result = Results.html("dashboard_page_template").
+					put("content", engineerSB.toString() + unclaimedSB.toString()).
+					put("title", "The Mix Hub Online - Dashboard").
+					put("full_name", account.getFirstname() + " " + account.getLastname()).
+					put("sidenav", SideNavigation.generate(req, account)).
+					put("notification_count", Notifications.count(req, account)).
+					put("notification_list", Notifications.generate(req, account));
 			return result;
 		}
 	}
@@ -175,8 +190,13 @@ public class Dashboard {
 
 		List<Job> jobs = MySQL.getJobs(ds).queryAllJobsFromUserID(account.getId());
 		if(jobs == null) {
-			Result result = Results.html("dashboard_user").
-					put("job", createNewJob);
+			Result result = Results.html("dashboard_page_template").
+					put("content", createNewJob).
+					put("title", "The Mix Hub Online - Dashboard").
+					put("full_name", account.getFirstname() + " " + account.getLastname()).
+					put("sidenav", SideNavigation.generate(req, account)).
+					put("notification_count", Notifications.count(req, account)).
+					put("notification_list", Notifications.generate(req, account));
 			return result;
 		} else {
 			StringBuilder jobSB = new StringBuilder();
@@ -185,9 +205,13 @@ public class Dashboard {
 				jobSB.append("+ Job: <a href=\"/jobs?id="+job.getId()+"\">"+job.getTitle()+"</a> - "+StageUtils.stageToString(job.getStage())+"</br>");
 			}
 
-
-			Result result = Results.html("dashboard_user").
-					put("job", jobSB.toString()+"</br></br>"+createNewJob);
+			Result result = Results.html("dashboard_page_template").
+					put("content", jobSB.toString()+"</br></br>"+createNewJob).
+					put("title", "The Mix Hub Online - Dashboard").
+					put("full_name", account.getFirstname() + " " + account.getLastname()).
+					put("sidenav", SideNavigation.generate(req, account)).
+					put("notification_count", Notifications.count(req, account)).
+					put("notification_list", Notifications.generate(req, account));
 			return result;
 		}
 	}

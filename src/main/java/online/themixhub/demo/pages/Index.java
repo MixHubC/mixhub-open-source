@@ -15,7 +15,8 @@ public class Index {
 
 	 //for when we use SQL
 	@Inject
-	public Index(DataSource ds) {
+	public Index(com.typesafe.config.Config conf, DataSource ds) {
+		System.out.println(conf.getString("hbs.cache"));
 		this.ds = ds;
 	}
 

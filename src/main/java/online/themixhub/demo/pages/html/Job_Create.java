@@ -1,4 +1,4 @@
-package online.themixhub.demo.pages;
+package online.themixhub.demo.pages.html;
 
 import com.google.inject.Inject;
 import online.themixhub.demo.pages.forms.JobCreationForm;
@@ -43,18 +43,14 @@ public class Job_Create {
 			Account account = MySQL.getAccounts(ds).queryAccountFromID(req.session().get("id").intValue());
 			JobCreationForm jobCreationForm = req.form(JobCreationForm.class, "js", "html", "uri");
 
+			String content = "";
+
 			if(jobCreationForm.comments == null || jobCreationForm.comments.isEmpty()) {
-				Result result = Results.html("job_create").
-						put("message", "Job creation failed - Fill out the comments");
-				return result;
+				content = "Job creation failed - Fill out the comments";
 			} else if(jobCreationForm.title == null || jobCreationForm.title.isEmpty()) {
-				Result result = Results.html("job_create").
-						put("message", "Job creation failed - Fill out the title");
-				return result;
+				content = "Job creation failed - Fill out the title";
 			} else if(jobCreationForm.file == null || jobCreationForm.file.toString().isEmpty()) {
-				Result result = Results.html("job_create").
-						put("message", "Job creation failed - Upload your WAV/MP3");
-				return result;
+				content = "Job creation failed - Upload your WAV/MP3";
 			}
 
 			String uniqueName = MiscUtils.generateUniqueFileName("uploads", jobCreationForm.file.name());
@@ -66,15 +62,25 @@ public class Job_Create {
 			newJob.setDate(System.currentTimeMillis());
 			newJob.setOwner_id(account.getId());
 
-			int jobID = MySQL.getJobs(ds).insert(newJob, jobCreationForm.comments, moveTo.getAbsolutePath());
+			if(content.isEmpty()) {
+				int jobID = MySQL.getJobs(ds).insert(newJob, jobCreationForm.comments, moveTo.getAbsolutePath());
 
-			if(jobID != -1) {
-				return Results.redirect("/jobs?id=" + jobID);
-			} else {
-				Result result = Results.html("job_create").
-						put("message", "Job creation failed");
-				return result;
+				if (jobID != -1) {
+					return Results.redirect("/jobs?id=" + jobID);
+				} else {
+					content = "Job creation failed";
+				}
 			}
+
+			Result result = Results.html("dashboard_page_template").
+					put("content", content).
+					put("title", "The Mix Hub Online - Dashboard").
+					put("full_name", account.getFirstname() + " " + account.getLastname()).
+					put("sidenav", SideNavigation.generate(req, account)).
+					put("notification_count", Notifications.count(req, account)).
+					put("notification_list", Notifications.generate(req, account));
+
+			return result;
 		}
 	}
 }
