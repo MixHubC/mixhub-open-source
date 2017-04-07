@@ -124,8 +124,8 @@ public class JobSQL {
 		sql.update(query,
 				new Object[]{
 						nextID,
-						job.owner_id,
-						job.title,
+						job.getOwner_id(),
+						job.getTitle(),
 						now,
 						now
 				}
@@ -142,7 +142,7 @@ public class JobSQL {
 		sql.update(query,
 				new Object[]{
 						now,
-						job.owner_id,
+						job.getOwner_id(),
 						nextID,
 						comment,
 						filepaths

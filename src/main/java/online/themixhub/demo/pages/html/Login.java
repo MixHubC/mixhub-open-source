@@ -1,4 +1,4 @@
-package online.themixhub.demo.pages;
+package online.themixhub.demo.pages.html;
 
 import com.google.inject.Inject;
 import online.themixhub.demo.utils.SessionUtils;
@@ -34,7 +34,8 @@ public class Login {
 			if (req.session().isSet("set")) {
 				return Results.redirect("/dashboard");
 			} else {
-				Result result = Results.html("login");
+				Result result = Results.html("login").
+						put("title", "The Mix Hub Online - Dashboard");
 				return result;
 			}
 		} else if(req.method().toLowerCase().equals("post")) {
@@ -54,8 +55,9 @@ public class Login {
 
 				return Results.redirect("dashboard");
 			} else {
-				Result result = Results.html("login_message").
-						put("message", "Error! Invalid E-Mail or Password.");
+				Result result = Results.html("login").
+						put("content", "Error! Invalid E-Mail or Password.").
+						put("title", "The Mix Hub Online - Dashboard");
 				return result;
 			}
 		}

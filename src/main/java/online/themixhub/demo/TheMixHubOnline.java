@@ -7,35 +7,10 @@ import org.jooby.jdbc.Jdbc;
 
 import online.themixhub.demo.utils.MiscUtils;
 import online.themixhub.demo.pages.*;
+import online.themixhub.demo.pages.html.*;
 
 /**
  * An example Jooby App using the MVC API
- *
- * TODO (MOVE TO BACKLOG BEFORE GIT PUSH):
- * 	+ Security
- * 		Job_Download - Needs security, anyone can download any file (they'd have to brute 'em, but still)
- * 		Cookie Session - Really insecure, move to Flat File or Database storage for production.
- * 		MySQL.createAccount - Only verifies unique E-Mail not unique username so usernames cannot be used for login, change if this is required.
- * 		JobComment - Doesn't verify if the user or engineer has access to post replies.
- * 		All of the checks inside of login and register are insecure
- * 		All of the stage progress pages have no security at all, this has to be fixed for production.
- * 		MySQL doesnt check caps during password - adding a hash will fix this
- * 		Assets allows ** should only allow **.filextension along with specific directories
- *
- * 	+ Functionality
- * 		Mock up payment system
- * 		Force close after 3 revisions
- * 		Make revision lock a dynamic number down the road
- *
- * 	+ Caching/Speed
- * 		For preformance look into if we can cache the Data Source object along with the JdbcTemplate object
- * 		Create some type of easy to use/re-usable cache system for account lookups so we're not constantly grabbing username from id via SQL mutliple times per single page
- *
- * 	+ Current Obvious Pitfalls
- * 		The engineer relies on waiting for the user right now
- * 			before they can continue to the finished stage,
- * 			we need to make it automatically move to finished after X hours of their revision.
- * 		The engineer can move the review to finished without uploading anything, add a check for this
  *
  * @author The Mix Hub Online
  */
@@ -53,15 +28,15 @@ public class TheMixHubOnline extends Jooby {
 		 */
 		assets("/favicon.ico"); //placeholder favicon is currently Google's 8-)
 		assets("/css/**.css");
+		assets("/js/**.js");
 		assets("**");
-		
+
 		/**
 		 * Error handling such as 403, 404 and 500
 		 */
 		err((req, rsp, err) -> {
 			if (rsp.status().get().toString().equals("Not Found (404)")) {
-				rsp.send(Results.html("404").
-				put("username", "username-goes-here!")); //example dynamic strings
+				rsp.send(Results.html("404"));
 			} else {
 				/*boolean sessionFailure = false;
 				try {

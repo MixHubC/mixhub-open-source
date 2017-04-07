@@ -7,7 +7,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
     <meta http-equiv="x-ua-compatible" content="ie=edge">
 
-    <title>Material Design Bootstrap</title>
+    <title>{{title}}</title>
 
     <!-- Font Awesome -->
     <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/font-awesome/4.6.0/css/font-awesome.min.css">
@@ -39,6 +39,7 @@
                             <h3><i class="fa fa-lock"></i> Login:</h3>
                         </div>
 
+						{{{content}}}
                         <!--Body-->
 						<form action="/login" method="post"> </br>
                         <div class="md-form">
@@ -63,7 +64,9 @@
 
                     <!--Footer-->
                     <div class="modal-footer text-center">
-                        Or login with <button type="button" class="btn btn-gplus"><i class="fa fa-google left"></i> Google</button>
+						<form action="/register">
+							<button type="submit" class="btn btn-secondary">Register</button>
+						</form>
                     </div>
 
                 </div>

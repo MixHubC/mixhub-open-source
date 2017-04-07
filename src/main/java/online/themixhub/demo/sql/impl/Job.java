@@ -12,14 +12,14 @@ import java.util.List;
  */
 public class Job {
 
-    int id;
-    int owner_id;
-	int engineer_id;
-	int stage;
-    String title;
-    long date;
-    int anonymous_engineer;
-    long last_activity_date;
+	private int id;
+	private int owner_id;
+	private int engineer_id;
+	private int stage;
+	private String title;
+	private long date;
+	private int anonymous_engineer;
+	private long last_activity_date;
 
     public int getId() {
         return id;

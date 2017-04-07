@@ -32,17 +32,18 @@ public class Job_Comment {
 	}
 
 	@GET
+	public Result getPageGet(Request req) throws IOException {
+		SessionUtils.handleSessionDestroy(req);
+		if (req.session().isSet("set")) {
+			return Results.redirect("/dashboard");
+		} else {
+			Result result = Results.html("register");
+			return result;
+		}
+	}
+
 	@POST
-	public Result getPage(Request req) throws IOException {
-		if(req.method().toLowerCase().equals("get")) {
-			SessionUtils.handleSessionDestroy(req);
-			if (req.session().isSet("set")) {
-				return Results.redirect("/dashboard");
-			} else {
-				Result result = Results.html("register");
-				return result;
-			}
-		} else if(req.method().toLowerCase().equals("post")) {
+	public Result getPagePost(Request req) throws IOException {
 			JobCommentForm jobCommentForm = req.form(JobCommentForm.class, "js", "html", "uri");
 			Account account = MySQL.getAccounts(ds).queryAccountFromID(req.session().get("id").intValue());
 
@@ -65,9 +66,5 @@ public class Job_Comment {
 			MySQL.getJobComments(ds).insert(newComment);
 
 			return Results.redirect("/jobs?id=" + jobCommentForm.jobID);
-		}
-
-		Result result = Results.html("register");
-		return result;
 	}
 }
