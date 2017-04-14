@@ -251,7 +251,7 @@ public class Job_Accept {
 					newComment.setParent_account_id(account.getId());
 					newComment.setReply_to_id(-1);
 					newComment.setParent_job_id(id);
-					newComment.setComment("Hello, I'm your mix hub engineer! I am currently reviewing your submitted mix.");
+					newComment.setComment("Hello, I'm your mix hub engineer! I am currently reviewing your submitted tracks.");
 
 					MySQL.getJobComments(ds).insert(newComment);
 
