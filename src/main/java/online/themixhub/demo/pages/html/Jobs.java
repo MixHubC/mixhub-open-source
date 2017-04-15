@@ -272,13 +272,13 @@ public class Jobs {
 					}
 
 					String jobDetails = "<table style=\"width:100%\">\n" +
-							"  <tr align=\"right\">\n" +
+							"  <tr align=\"left\">\n" +
 							"    <th>Stage</th> \n" +
 							"    <th>Title</th>\n" +
 							"    <th>Owner</th> \n" +
 							"    <th>Date</th>\n" +
 							"  </tr>\n" +
-							"  <tr align=\"right\">\n" +
+							"  <tr align=\"left\">\n" +
 							"    <td>"+ job.getStage().getDescription()+"</td>\n" +
 							"    <td>"+job.getTitle()+"</td>\n" +
 							"    <td>"+author.getFirstname()+ " " + author.getLastname()+"</td> \n" +
