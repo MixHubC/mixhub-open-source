@@ -187,7 +187,7 @@
  *       same "printed page" as the copyright notice for easier
  *       identification within third-party archives.
  *
- *    Copyright {yyyy} {name of copyright owner}
+ *    Copyright 2017 The
  *
  *    Licensed under the Apache License, Version 2.0 (the "License");
  *    you may not use this file except in compliance with the License.
@@ -203,23 +203,28 @@
  */
 package online.themixhub.demo.sql.impl;
 
+import java.math.BigDecimal;
 import java.util.Date;
 
 /**
- * Used to define the job comment object
- *
- * @author The Mix Hub Online
+ * Created by Steve on 4/13/2017.
  */
-public class JobComment {
+public class Invoice {
 
-	private int id;
-	private int job_id;
+    private int id;
 	private int owner_id;
 	private String owner_ip;
+	private int product_id;
 	private long date;
-	private String comment;
-	private String filepathsCSV;
+	private BigDecimal amount;
+	private BigDecimal amount_tax;
+	private BigDecimal amount_total;
+	private int stage;
+	private long payment_date;
+	private int payment_form;
+	private int job_id;
 	private Date dateObject;
+	private Date paymentDateObject;
 
     public int getId() {
         return id;
@@ -229,32 +234,13 @@ public class JobComment {
         this.id = id;
     }
 
-	public int getJob_id() {
-		return job_id;
-	}
+    public int getOwner_id() {
+        return owner_id;
+    }
 
-	public void setJob_id(int job_id) {
-		this.job_id = job_id;
-	}
-
-	public long getDate() {
-		return date;
-	}
-
-	public void setDate(long date) {
-		this.date = date;
-		if(dateObject != null) {
-			dateObject = new Date(date);
-		}
-	}
-
-	public int getOwner_id() {
-		return owner_id;
-	}
-
-	public void setOwner_id(int parent_account_id) {
-		this.owner_id = parent_account_id;
-	}
+    public void setOwner_id(int owner_id) {
+        this.owner_id = owner_id;
+    }
 
 	public String getOwner_ip() {
 		return owner_ip;
@@ -264,20 +250,82 @@ public class JobComment {
 		this.owner_ip = owner_ip;
 	}
 
-	public String getComment() {
-		return comment;
+	public int getProduct_id() {
+        return product_id;
+    }
+
+    public void setProduct_id(int service_provider_id) {
+        this.product_id = service_provider_id;
+    }
+
+    public long getDate() {
+        return date;
+    }
+
+    public void setDate(long date) {
+        this.date = date;
+		if(dateObject != null) {
+			dateObject = new Date(date);
+		}
+    }
+
+    public BigDecimal getAmount() {
+        return amount;
+    }
+
+    public void setAmount(BigDecimal amount) {
+        this.amount = amount;
+    }
+
+	public BigDecimal getAmount_tax() {
+		return amount_tax;
 	}
 
-	public void setComment(String comment) {
-		this.comment = comment;
+	public void setAmount_tax(BigDecimal amount_tax) {
+		this.amount_tax = amount_tax;
 	}
 
-	public String getFilepathsCSV() {
-		return filepathsCSV;
+	public BigDecimal getAmount_total() {
+		return amount_total;
 	}
 
-	public void setFilepathsCSV(String filepathsCSV) {
-		this.filepathsCSV = filepathsCSV;
+	public void setAmount_total(BigDecimal amount_total) {
+		this.amount_total = amount_total;
+	}
+
+	public int getStage() {
+        return stage;
+    }
+
+    public void setStage(int stage) {
+        this.stage = stage;
+    }
+
+	public long getPayment_date() {
+		return payment_date;
+	}
+
+	public void setPayment_date(long payment_date) {
+		this.payment_date = payment_date;
+		if(paymentDateObject != null) {
+			paymentDateObject = new Date(payment_date);
+		}
+	}
+
+	public int getPayment_form() {
+		return payment_form;
+	}
+
+	public void setPayment_form(int payment_form) {
+		this.payment_form = payment_form;
+	}
+
+	public int getJob_id() {
+		return job_id;
+	}
+
+	public void setJob_id(int job_id) {
+		this.job_id = job_id;
 	}
 
 	public Date getDateObject () {
@@ -286,4 +334,13 @@ public class JobComment {
 		}
 		return dateObject;
 	}
+
+	public Date getPaymentDateObject () {
+		if(paymentDateObject == null) {
+			paymentDateObject = new Date(payment_date);
+		}
+		return paymentDateObject;
+	}
 }
+
+

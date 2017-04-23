@@ -205,9 +205,14 @@ package online.themixhub.demo.pages.html;
 
 import com.google.inject.Inject;
 import online.themixhub.demo.pages.forms.JobCreationForm;
+import online.themixhub.demo.pages.html.generators.BreadCrumbs;
+import online.themixhub.demo.pages.html.generators.Notifications;
+import online.themixhub.demo.pages.html.generators.SideNavigation;
 import online.themixhub.demo.sql.MySQL;
 import online.themixhub.demo.sql.impl.Account;
+import online.themixhub.demo.sql.impl.Invoice;
 import online.themixhub.demo.sql.impl.Job;
+import online.themixhub.demo.utils.LoggingUtil;
 import online.themixhub.demo.utils.MiscUtils;
 import online.themixhub.demo.utils.SessionUtils;
 import org.jooby.Request;
@@ -220,6 +225,7 @@ import org.jooby.mvc.Path;
 import javax.sql.DataSource;
 import java.io.File;
 import java.io.IOException;
+import java.util.List;
 
 @Path("/job_create")
 public class Job_Create {
@@ -248,7 +254,11 @@ public class Job_Create {
 
 			String content = "";
 
-			if(jobCreationForm.comments == null || jobCreationForm.comments.isEmpty()) {
+			List<Invoice> invoices = MySQL.getInvoices(ds).queryAllPaidButNoJobAssignedInvoicesFromOwnerID(account.getId());
+
+			if(invoices == null) {
+				content = "Please pay for your mix track invoice before trying to create the job!";
+			} else if(jobCreationForm.comments == null || jobCreationForm.comments.isEmpty()) {
 				content = "Job creation failed - Fill out the comments";
 			} else if(jobCreationForm.title == null || jobCreationForm.title.isEmpty()) {
 				content = "Job creation failed - Fill out the title";
@@ -256,33 +266,39 @@ public class Job_Create {
 				content = "Job creation failed - Upload your WAV/MP3";
 			}
 
-			String uniqueName = MiscUtils.generateUniqueFileName("uploads", jobCreationForm.file.name());
-			File moveTo = new File("uploads" + File.separator + uniqueName);
-			jobCreationForm.file.file().renameTo(moveTo);
-
-			Job newJob = new Job();
-			newJob.setTitle(jobCreationForm.title);
-			newJob.setDate(System.currentTimeMillis());
-			newJob.setOwner_id(account.getId());
-
 			if(content.isEmpty()) {
+				String uniqueName = MiscUtils.generateUniqueFileName("uploads", jobCreationForm.file.name());
+				File moveTo = new File("uploads" + File.separator + uniqueName);
+				jobCreationForm.file.file().renameTo(moveTo);
+
+				Job newJob = new Job();
+				newJob.setTitle(jobCreationForm.title);
+				newJob.setDate(System.currentTimeMillis());
+				newJob.setOwner_id(account.getId());
+				newJob.setOwner_ip(req.ip());
+
 				int jobID = MySQL.getJobs(ds).insert(newJob, jobCreationForm.comments, moveTo.getAbsolutePath());
 
+				//grabs the first index of the array and returns the id for it
+				MySQL.getInvoices(ds).setInvoiceStageAndJobID(invoices.get(0).getId(), 2, jobID);
+
 				if (jobID != -1) {
+					LoggingUtil.insertUserLog(ds, "Jobs", "User created job: " + jobID+": "+newJob.getTitle(), account.getId(), req);
 					return Results.redirect("/jobs?id=" + jobID);
 				} else {
+					LoggingUtil.insertUserLog(ds, "Jobs", "Job creation failed: " + jobID+": "+newJob.getTitle(), account.getId(), req);
 					content = "Job creation failed";
 				}
 			}
 
 			Result result = Results.html("dashboard_page_template").
 					put("content", content).
-					put("title", "The Mix Hub Online - Dashboard").
+					put("title", "The Mix Hub Online - Jobs").
+					put("breadcrumb", BreadCrumbs.instance().href("/dashboard", "Dashboard").title("Jobs")).
+					put("sidenav", SideNavigation.generate(req, account, SideNavigation.ActivePage.JOBS)).
 					put("full_name", account.getFirstname() + " " + account.getLastname()).
-					put("sidenav", SideNavigation.generate(req, account)).
 					put("notification_count", Notifications.count(req, account)).
 					put("notification_list", Notifications.generate(req, account));
-
 			return result;
 		}
 	}

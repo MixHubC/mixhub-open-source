@@ -204,6 +204,8 @@
 package online.themixhub.demo.pages.html;
 
 import com.google.inject.Inject;
+import com.sun.javafx.util.Logging;
+import online.themixhub.demo.utils.LoggingUtil;
 import online.themixhub.demo.utils.SessionUtils;
 import online.themixhub.demo.pages.forms.LoginForm;
 import online.themixhub.demo.sql.MySQL;
@@ -248,9 +250,11 @@ public class Login {
 
 			Account account = MySQL.getAccounts(ds).queryValidAccount(loginForm.email, loginForm.password);
 
-			boolean remember = ((loginForm.rememberme != null) ? true : false);
+			boolean remember = ((loginForm.rememberMe != null) ? true : false);
 
 			if(account != null) {
+				LoggingUtil.insertUserLog(ds, "Login", "User Logged In", account.getId(), req);
+
 				req.session().set("set", System.currentTimeMillis()); //also doubles as a unique hash/identifer
 				req.session().set("id", account.getId()); //instead of email, set ID
 				req.session().set("remember", remember);
@@ -258,6 +262,8 @@ public class Login {
 
 				return Results.redirect("dashboard");
 			} else {
+				LoggingUtil.insertUserLog(ds, "Login", "User Failed Login - Attempted With Invalid Combo ("+loginForm.email+":"+loginForm.password+")", -1, req);
+
 				Result result = Results.html("login").
 						put("content", "Error! Invalid E-Mail or Password.").
 						put("title", "The Mix Hub Online - Dashboard");

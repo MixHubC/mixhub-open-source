@@ -201,89 +201,239 @@
  *    See the License for the specific language governing permissions and
  *    limitations under the License.
  */
-package online.themixhub.demo.sql.impl;
+package online.themixhub.demo.pages.html;
 
+import com.google.inject.Inject;
+import online.themixhub.demo.pages.html.generators.BreadCrumbs;
+import online.themixhub.demo.pages.html.generators.Notifications;
+import online.themixhub.demo.pages.html.generators.SideNavigation;
+import online.themixhub.demo.sql.MySQL;
+import online.themixhub.demo.sql.impl.Account;
+import online.themixhub.demo.sql.impl.Invoice;
+import online.themixhub.demo.utils.PermissionUtils;
+import online.themixhub.demo.utils.SessionUtils;
+import org.jooby.Request;
+import org.jooby.Result;
+import org.jooby.Results;
+import org.jooby.mvc.GET;
+import org.jooby.mvc.Path;
+
+import javax.sql.DataSource;
+import java.io.IOException;
 import java.util.Date;
+import java.util.HashMap;
+import java.util.List;
 
-/**
- * Used to define the job comment object
- *
- * @author The Mix Hub Online
- */
-public class JobComment {
+@Path("/invoices")
+public class Invoices {
 
-	private int id;
-	private int job_id;
-	private int owner_id;
-	private String owner_ip;
-	private long date;
-	private String comment;
-	private String filepathsCSV;
-	private Date dateObject;
+	private DataSource ds;
 
-    public int getId() {
-        return id;
-    }
-
-    public void setId(int id) {
-        this.id = id;
-    }
-
-	public int getJob_id() {
-		return job_id;
+	//for when we use SQL
+	@Inject
+	public Invoices(DataSource ds) {
+		this.ds = ds;
 	}
 
-	public void setJob_id(int job_id) {
-		this.job_id = job_id;
-	}
+	@GET
+	public Result getPageGet(Request req) throws IOException {
+		SessionUtils.handleSessionDestroy(req);
+		if (!req.session().isSet("set")) {
+			return Results.redirect("/");
+		} else {
+			Account account = MySQL.getAccounts(ds).queryAccountFromID(req.session().get("id").intValue());
 
-	public long getDate() {
-		return date;
-	}
+			HashMap<Integer, Account> accountCacheMap = new HashMap<Integer, Account>();
+			accountCacheMap.put(account.getId(), account);
 
-	public void setDate(long date) {
-		this.date = date;
-		if(dateObject != null) {
-			dateObject = new Date(date);
+			if(req.param("id").isSet()) {
+				return viewInvoice(req, account, accountCacheMap);
+			} else if(req.param("print").isSet()) {
+				return printInvoice(req, account, accountCacheMap);
+			} else {
+				if(PermissionUtils.isEngineer(account) ||
+						PermissionUtils.isAdmin(account))
+				{
+					return Results.redirect("/dashboard");
+				} else {
+					return listInvoices(req, account, accountCacheMap);
+				}
+			}
 		}
 	}
 
-	public int getOwner_id() {
-		return owner_id;
-	}
+	private Result listInvoices(Request req, Account account, HashMap<Integer, Account> accountCacheMap) {
+		List<Invoice> invoices = MySQL.getInvoices(ds).queryAllInvoicesFromOwnerID(account.getId());
+		if(invoices == null) {
+			Result result = Results.html("dashboard_page_template").
+					put("content", "<h2>You have no invoices!</h2></br>To create a new invoice simply <a href=\"/jobs\">click here</a> and select 'Purchase New Mix'.").
+					put("title", "The Mix Hub Online - Invoices").
+					put("breadcrumb", BreadCrumbs.instance().href("/dashboard", "Dashboard").title("Invoices")).
+					put("sidenav", SideNavigation.generate(req, account, SideNavigation.ActivePage.INVOICES)).
+					put("full_name", account.getFirstname() + " " + account.getLastname()).
+					put("notification_count", Notifications.count(req, account)).
+					put("notification_list", Notifications.generate(req, account));
+			return result;
+		} else {
+			StringBuilder invoiceSB = new StringBuilder();
+			invoiceSB.append("Your Invoices:</br>");
+			for(Invoice invoice : invoices) {
+				invoiceSB.append("+ Invoice: <a href=\"/invoices?id="+invoice.getId()+"\">"+invoice.getId()+"</a></br>");
+			}
 
-	public void setOwner_id(int parent_account_id) {
-		this.owner_id = parent_account_id;
-	}
-
-	public String getOwner_ip() {
-		return owner_ip;
-	}
-
-	public void setOwner_ip(String owner_ip) {
-		this.owner_ip = owner_ip;
-	}
-
-	public String getComment() {
-		return comment;
-	}
-
-	public void setComment(String comment) {
-		this.comment = comment;
-	}
-
-	public String getFilepathsCSV() {
-		return filepathsCSV;
-	}
-
-	public void setFilepathsCSV(String filepathsCSV) {
-		this.filepathsCSV = filepathsCSV;
-	}
-
-	public Date getDateObject () {
-		if(dateObject == null) {
-			dateObject = new Date(date);
+			Result result = Results.html("dashboard_page_template").
+					put("content", invoiceSB.toString()).
+					put("title", "The Mix Hub Online - Invoices").
+					put("breadcrumb", BreadCrumbs.instance().href("/dashboard", "Dashboard").title("Invoices")).
+					put("sidenav", SideNavigation.generate(req, account, SideNavigation.ActivePage.INVOICES)).
+					put("full_name", account.getFirstname() + " " + account.getLastname()).
+					put("notification_count", Notifications.count(req, account)).
+					put("notification_list", Notifications.generate(req, account));
+			return result;
 		}
-		return dateObject;
 	}
+
+	private Result viewInvoice(Request req, Account account, HashMap<Integer, Account> accountCacheMap) {
+		int id = req.param("id", "js", "html", "uri").intValue();
+		Invoice invoice = MySQL.getInvoices(ds).queryInvoiceFromID(id);
+
+		if(invoice == null) {
+			return Results.redirect("/dashboard");
+		}
+
+		if(invoice.getOwner_id() == account.getId()) {
+			String html = "<div class=\"container\">\n" +
+					"    <div class=\"row\">\n" +
+					"        <div class=\"col-xl-12\">\n" +
+					"    <div class=\"invoice-title\">\n" +
+					"    <h2>Invoice</h2><h3 class=\"pull-right\"></h3>\n" +
+					"    </div>\n" +
+					"    <hr>\n" +
+					"    <div class=\"row\">\n" +
+					"    <div class=\"col-xl-12 text-right\">\n" +
+					"    <address>\n" +
+					"    <strong>Order Date:</strong><br>\n" +
+					"    "+invoice.getDateObject()+"\n" +
+					"    </address>\n" +
+					"    </div>\n" +
+					"    </div>\n" +
+					"    <div class=\"row\">\n" +
+					"    <div class=\"col-xl-12\">\n" +
+					"    <address>\n" +
+					"    <strong>Billed To:</strong><br>\n" +
+					"    "+account.getFirstname() + " " + account.getLastname()+"<br>\n" +
+					"    "+account.getAddress_1() + "<br>\n" +
+					"    "+(account.getAddress_2() == null ? ("") : (account.getAddress_2()+"+<br>\n")) +
+					"    "+account.getCity()+", "+account.getState()+" "+account.getZip()+"\n" +
+					"    </address>\n" +
+					"    </div>\n" +
+					"    </div>\n" +
+					"    </div>\n" +
+					"    </div>\n" +
+					"    <div class=\"row\">\n" +
+					"    <div class=\"col-md-12\">\n" +
+					"    <div class=\"panel panel-default\">\n" +
+					"    <div class=\"panel-heading\">\n" +
+					"    <h3 class=\"panel-title\" style=\"color:#000\"><strong>Order summary</strong></h3>\n" +
+					"    </div>\n" +
+					"    <div class=\"panel-body\">\n" +
+					"    <div class=\"table-responsive\">\n" +
+					"    <table class=\"table table-condensed\">\n" +
+					"    <thead>\n" +
+					"                                <tr>\n" +
+					"        <td><strong>Item</strong></td>\n" +
+					"        <td class=\"text-center\"><strong>Price</strong></td>\n" +
+					"        <td class=\"text-center\"><strong>Quantity</strong></td>\n" +
+					"        <td class=\"text-right\"><strong>Totals</strong></td>\n" +
+					"                                </tr>\n" +
+					"    </thead>\n" +
+					"    <tbody>\n" +
+					"    <!-- foreach ($order->lineItems as $line) or some such thing here -->\n" +
+					"    <tr>\n" +
+					"    <td>Song Mix</td>\n" +
+					"    <td class=\"text-center\">$9999.99</td>\n" +
+					"    <td class=\"text-center\">1</td>\n" +
+					"    <td class=\"text-right\">$9999.99</td>\n" +
+					"    </tr>\n" +
+					"    <tr>\n" +
+					"    <td class=\"thick-line\"></td>\n" +
+					"    <td class=\"thick-line\"></td>\n" +
+					"    <td class=\"thick-line text-center\"><strong>Subtotal</strong></td>\n" +
+					"    <td class=\"thick-line text-right\">$9999.99</td>\n" +
+					"    </tr>\n" +
+					"    <tr>\n" +
+					"    <td class=\"no-line\"></td>\n" +
+					"    <td class=\"no-line\"></td>\n" +
+					"    <td class=\"no-line text-center\"><strong>Tax</strong></td>\n" +
+					"    <td class=\"no-line text-right\">$1199.99</td>\n" +
+					"    </tr>\n" +
+					"    <tr>\n" +
+					"    <td class=\"no-line\"></td>\n" +
+					"    <td class=\"no-line\"></td>\n" +
+					"    <td class=\"no-line text-center\"><strong>Total</strong></td>\n" +
+					"    <td class=\"no-line text-right\">$11199.98</td>\n" +
+					"    </tr>\n" +
+					"    </tbody>\n" +
+					"    </table>\n" +
+					"    </div>\n" +
+					"    </div>\n" +
+					"    </div>\n" +
+					"    </div>\n" +
+					"    </div>\n";
+
+			if(invoice.getStage() == 0) {
+				html += "<form action=\"/pay_invoice\" method=\"get\">" +
+						"<input type=\"hidden\" name=\"invoice_id\" value=\""+invoice.getId()+"\">"+
+						"<input type=\"submit\" type=\"button\" class=\"btn btn-default\" value=\"Pay Invoice\"></form>";
+			} else if(invoice.getStage() == 1) {
+				html += "<form action=\"/jobs\" method=\"get\">" +
+						"<input type=\"submit\" type=\"button\" class=\"btn btn-default\" value=\"Create New Job\"></form>";
+			} else if(invoice.getStage() == 2) {
+				html += "<form action=\"/jobs\" method=\"get\">" +
+						"<input type=\"hidden\" name=\"id\" value=\""+invoice.getJob_id()+"\">"+
+						"<input type=\"submit\" type=\"button\" class=\"btn btn-default\" value=\"View Job\"></form>";
+			}
+
+			html += "</div>";
+
+			Result result = Results.html("dashboard_page_template").
+					put("content", html).
+					put("title", "The Mix Hub Online - Invoices").
+					put("breadcrumb", BreadCrumbs.instance().href("/dashboard", "Dashboard").href("/invoices", "Invoices").title("View Invoice")).
+					put("sidenav", SideNavigation.generate(req, account, SideNavigation.ActivePage.INVOICES)).
+					put("full_name", account.getFirstname() + " " + account.getLastname()).
+					put("notification_count", Notifications.count(req, account)).
+					put("notification_list", Notifications.generate(req, account));
+			return result;
+		} else {
+			return Results.redirect("/dashboard");
+		}
+	}
+
+	private Result printInvoice(Request req, Account account, HashMap<Integer, Account> accountCacheMap) {
+		int id = req.param("id", "js", "html", "uri").intValue();
+		Invoice invoice = MySQL.getInvoices(ds).queryInvoiceFromID(id);
+
+		if(invoice == null) {
+			return Results.redirect("/dashboard");
+		}
+
+		if(invoice.getOwner_id() == account.getId()) {
+			StringBuilder sb = new StringBuilder();
+
+			Result result = Results.html("dashboard_page_template").
+					put("content", sb).
+					put("title", "The Mix Hub Online - Invoices").
+					put("breadcrumb", BreadCrumbs.instance().href("/dashboard", "Dashboard").href("/invoices", "Invoices").title("Print Invoice")).
+					put("sidenav", SideNavigation.generate(req, account, SideNavigation.ActivePage.INVOICES)).
+					put("full_name", account.getFirstname() + " " + account.getLastname()).
+					put("notification_count", Notifications.count(req, account)).
+					put("notification_list", Notifications.generate(req, account));
+			return result;
+		} else {
+			return Results.redirect("/dashboard");
+		}
+	}
+
+
 }

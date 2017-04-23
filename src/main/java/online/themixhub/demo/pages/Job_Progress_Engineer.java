@@ -211,7 +211,7 @@ import online.themixhub.demo.sql.impl.Job;
 import online.themixhub.demo.sql.impl.JobComment;
 import online.themixhub.demo.utils.PermissionUtils;
 import online.themixhub.demo.utils.SessionUtils;
-import online.themixhub.demo.utils.Stage;
+import online.themixhub.demo.logic.Stage;
 
 import org.jooby.Request;
 import org.jooby.Result;
@@ -258,9 +258,9 @@ public class Job_Progress_Engineer {
 					newComment.setComment("I've completed the review, after 3 revisions I am now automatically closing this.");
 				else
 					newComment.setComment("I've completed the review, it's now up to you to decide if you want anything changed or to close the ticket.");
-				newComment.setParent_account_id(account.getId());
-				newComment.setReply_to_id(-1);
-				newComment.setParent_job_id(id);
+				newComment.setOwner_id(account.getId());
+				newComment.setOwner_ip(req.ip());
+				newComment.setJob_id(id);
 				MySQL.getJobComments(ds).insert(newComment);
 				return Results.redirect("/jobs?id=" + id);
 			} else {

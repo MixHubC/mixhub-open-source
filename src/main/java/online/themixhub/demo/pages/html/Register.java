@@ -205,6 +205,7 @@ package online.themixhub.demo.pages.html;
 
 import com.google.inject.Inject;
 import online.themixhub.demo.sql.impl.Account;
+import online.themixhub.demo.utils.LoggingUtil;
 import online.themixhub.demo.utils.SessionUtils;
 import online.themixhub.demo.pages.forms.RegisterForm;
 import online.themixhub.demo.sql.MySQL;
@@ -259,8 +260,12 @@ public class Register {
 
 
 			if(MySQL.getAccounts(ds).insert(newAccount)) {
+				LoggingUtil.insertUserLog(ds, "Register", "Successfully Registered account " + registerForm.email, -1, req);
+
 				content = "Success! You've register the account '" + registerForm.username + "'. <a href=\"/login\">Click here</a> to login!";
 			} else {
+				LoggingUtil.insertUserLog(ds, "Register", "User Failed Registered account " + registerForm.email, -1, req);
+
 				content = "Error! This E-Mail is already in use...";
 			}
 

@@ -205,7 +205,7 @@ package online.themixhub.demo.sql.impl;
 
 import org.springframework.jdbc.core.JdbcTemplate;
 
-import online.themixhub.demo.utils.Stage;
+import online.themixhub.demo.logic.Stage;
 
 import javax.sql.DataSource;
 import java.util.List;
@@ -225,7 +225,7 @@ public class JobSQL {
 		if(thisSQL == null) {
 			thisSQL = new JobSQL();
 			thisSQL.ds = ds;
-			thisSQL.sql =  new JdbcTemplate(ds);
+			thisSQL.sql = new JdbcTemplate(ds);
 		}
 		return thisSQL;
 	}
@@ -250,10 +250,27 @@ public class JobSQL {
 	/**
 	 * Returns a list of jobs owned/created by the specific user, returns null if none
 	 */
-	public synchronized List<Job> queryAllJobsFromUserID(int userid) {
+	public synchronized List<Job> queryAllJobsFromOwnerID(int userid) {
 		String query = "SELECT * FROM jobs WHERE owner_id = ?";
 		List<Job> jobs = sql.query(query,
 				new Object[]{userid},
+				new JobMapper()
+		);
+
+		if(!jobs.isEmpty()) {
+			return jobs;
+		}
+
+		return null;
+	}
+
+	/**
+	 * Returns a list of jobs owned/created by the specific user, returns null if none
+	 */
+	public synchronized List<Job> queryAllJobsFromOwnerID(int userid, int limit) {
+		String query = "SELECT * FROM jobs WHERE owner_id = ? LIMIT ?";
+		List<Job> jobs = sql.query(query,
+				new Object[]{userid, limit},
 				new JobMapper()
 		);
 
@@ -321,15 +338,17 @@ public class JobSQL {
 		String query = "INSERT INTO jobs (" +
 				"id, " +
 				"owner_id, " +
+				"owner_ip, " +
 				"title, " +
 				"date, " +
 				"last_activity_date " +
 				")"+
-				" values (?, ?, ?, ?, ?)";
+				" values (?, ?, ?, ?, ?, ?)";
 		sql.update(query,
 				new Object[]{
 						nextID,
 						job.getOwner_id(),
+						job.getOwner_ip(),
 						job.getTitle(),
 						now,
 						now
@@ -338,16 +357,18 @@ public class JobSQL {
 
 		query = "INSERT INTO job_comments (" +
 				"date, " +
-				"parent_account_id, " +
-				"parent_job_id, " +
+				"owner_id, " +
+				"owner_ip, " +
+				"job_id, " +
 				"comment, " +
-				"filepaths" +
+				"filepathsCSV" +
 				")"+
-				" values (?, ?, ?, ?, ?)";
+				" values (?, ?, ?, ?, ?, ?)";
 		sql.update(query,
 				new Object[]{
 						now,
 						job.getOwner_id(),
+						job.getOwner_ip(),
 						nextID,
 						comment,
 						filepaths

@@ -201,37 +201,81 @@
  *    See the License for the specific language governing permissions and
  *    limitations under the License.
  */
-package online.themixhub.demo.utils;
+package online.themixhub.demo.pages.html;
 
-/**
- * Stage AKA Status
- *
- * @author The Mix Hub Online
- */
-@Deprecated
-public class StageUtils {
+import com.google.inject.Inject;
+import online.themixhub.demo.pages.html.generators.BreadCrumbs;
+import online.themixhub.demo.pages.html.generators.Notifications;
+import online.themixhub.demo.pages.html.generators.SideNavigation;
+import online.themixhub.demo.sql.MySQL;
+import online.themixhub.demo.sql.impl.Account;
+import online.themixhub.demo.sql.impl.Invoice;
+import online.themixhub.demo.utils.LoggingUtil;
+import online.themixhub.demo.utils.SessionUtils;
+import org.jooby.Request;
+import org.jooby.Result;
+import org.jooby.Results;
+import org.jooby.mvc.GET;
+import org.jooby.mvc.POST;
+import org.jooby.mvc.Path;
 
-	@Deprecated
-	public static String sxxtageToString(int stage) {
-		if(stage == 0) {
-			return "Waiting for an engineer to claim";
-		} else if(stage == 1) {
-			return "Claimed by engineer, waiting for engineer to review";
-		} else if(stage == 2) {
-			return "Waiting on user-response";
-		} else if(stage == 3) {
-			return "Second Tier - Waiting for engineer";
-		} else if(stage == 4) {
-			return "Second Tier - Waiting on user-response";
-		} else if(stage == 5) {
-			return "Third Tier (Final) - Waiting for engineer";
-		} else if(stage == 98) {
-			return "Job Finished, set by engineer";
-		}  else if(stage == 99) {
-			return "Job Finished, set by user";
+import javax.sql.DataSource;
+import java.io.IOException;
+import java.math.BigDecimal;
+import java.util.Date;
+import java.util.HashMap;
+
+@Path("/pay_invoice")
+public class Pay_Invoice {
+
+	private DataSource ds;
+
+	//for when we use SQL
+	@Inject
+	public Pay_Invoice(DataSource ds) {
+		this.ds = ds;
+	}
+
+	@GET
+	public Result getPageGET(Request req) throws IOException {
+		SessionUtils.handleSessionDestroy(req);
+		if (!req.session().isSet("set")) {
+			return Results.redirect("/");
 		} else {
-			return "Unknown stage!";
+			Account account = MySQL.getAccounts(ds).queryAccountFromID(req.session().get("id").intValue());
+
+			HashMap<Integer, Account> accountCacheMap = new HashMap<Integer, Account>();
+			accountCacheMap.put(account.getId(), account);
+
+			if(req.param("invoice_id").isSet()) {
+				return showPaymentOptions(req, account, accountCacheMap);
+			} else if(req.param("paid").isSet()) {
+				//this is for mock payments only. DEMO TESTING PURPOSES ONLY
+				int invoiceID = req.param("paid").intValue();
+				LoggingUtil.insertUserLog(ds, "Invoices", "User paid invoice #" + invoiceID, account.getId(), req);
+
+				//this is for mock payments only. DEMO TESTING PURPOSES ONLY
+				MySQL.getInvoices(ds).setInvoiceStage(invoiceID, 1);
+
+				//this is for mock payments only. DEMO TESTING PURPOSES ONLY
+				return Results.redirect("/invoices?id="+req.param("paid").intValue());
+			} else {
+				return Results.redirect("/");
+			}
 		}
 	}
 
+	public Result showPaymentOptions(Request req, Account account, HashMap<Integer, Account> accountCacheMap) {
+		String html = "<a href=\"/pay_invoice?paid="+req.param("invoice_id").intValue()+"\">Pay this for free!</a>";
+
+		Result result = Results.html("dashboard_page_template").
+				put("content", html).
+				put("title", "The Mix Hub Online - Pay Invoice").
+				put("breadcrumb", BreadCrumbs.instance().href("/dashboard", "Dashboard").href("/invoices", "Invoices").title("Pay Invoice")).
+				put("sidenav", SideNavigation.generate(req, account, SideNavigation.ActivePage.INVOICES)).
+				put("full_name", account.getFirstname() + " " + account.getLastname()).
+				put("notification_count", Notifications.count(req, account)).
+				put("notification_list", Notifications.generate(req, account));
+		return result;
+	}
 }

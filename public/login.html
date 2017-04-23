@@ -54,18 +54,25 @@
                             <label for="form4">Your password</label>
                         </div>
 
-						<input type="checkbox" name="rememberme"> Remember Me<br>
-                        <div class="text-center">
-                            <button class="btn btn-primary">Login</button>
+						<div class="row">
+
+                            <div class="col-md-6">
+                                   <input type="checkbox" name="rememberMe" id="checkbox1">
+                                    <label for="checkbox1">Remember Me</label>
+                            </div>
+
+                            <div class="col-md-6">
+                                <button class="btn btn-primary">Login</button>
+                            </div>
+
                         </div>
-						</form>
 
                     </div>
 
                     <!--Footer-->
                     <div class="modal-footer text-center">
 						<form action="/register">
-							<button type="submit" class="btn btn-secondary">Register</button>
+							<a href="/register" class="btn btn-secondary waves-effect waves-light">Register</a>
 						</form>
                     </div>
 

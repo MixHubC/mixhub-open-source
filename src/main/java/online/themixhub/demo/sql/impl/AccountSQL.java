@@ -223,7 +223,7 @@ public class AccountSQL {
 		if(thisSQL == null) {
 			thisSQL = new AccountSQL();
 			thisSQL.ds = ds;
-			thisSQL.sql =  new JdbcTemplate(ds);
+			thisSQL.sql = new JdbcTemplate(ds);
 		}
 		return thisSQL;
 	}
@@ -281,7 +281,7 @@ public class AccountSQL {
 	public synchronized boolean insert(Account account) {
 		String query = "SELECT * FROM accounts WHERE email = ?";
 		List<Account> accounts = sql.query(query,
-				new Object[]{account.email},
+				new Object[]{account.getEmail()},
 				new AccountMapper()
 		);
 
@@ -310,19 +310,19 @@ public class AccountSQL {
 					new Object[]{
 							0,
 							System.currentTimeMillis(),
-							account.register_ip,
-							account.email,
-							account.username,
-							account.password,
-							account.firstname,
-							account.lastname,
-							account.address_1,
-							account.address_2,
-							account.city,
-							account.state,
-							account.country,
-							account.zip,
-							account.phone
+							account.getRegister_ip(),
+							account.getEmail(),
+							account.getUsername(),
+							account.getPassword(),
+							account.getFirstname(),
+							account.getLastname(),
+							account.getAddress_1(),
+							account.getAddress_2(),
+							account.getCity(),
+							account.getState(),
+							account.getCountry(),
+							account.getZip(),
+							account.getPhone()
 					}
 			);
 

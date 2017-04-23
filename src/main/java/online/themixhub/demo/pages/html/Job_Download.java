@@ -204,6 +204,9 @@
 package online.themixhub.demo.pages.html;
 
 import com.google.inject.Inject;
+import online.themixhub.demo.pages.html.generators.BreadCrumbs;
+import online.themixhub.demo.pages.html.generators.Notifications;
+import online.themixhub.demo.pages.html.generators.SideNavigation;
 import online.themixhub.demo.sql.MySQL;
 import online.themixhub.demo.sql.impl.Account;
 import online.themixhub.demo.utils.SessionUtils;
@@ -238,22 +241,23 @@ public class Job_Download {
 			File download = new File(path.getAbsolutePath()+File.separator+fileName);
 			//System.out.println("D: " + download.getParentFile().getAbsolutePath()+", P: " + path.getAbsolutePath());
 			if(download.getParentFile().getAbsolutePath().equals(path.getAbsolutePath())) {
-				if(!download.exists()) {
-					return Results.redirect("/jobs");
-				} else {
+				if(download.exists()) {
 					return Results.ok(download).header("Content-Disposition", "attachment; filename="+download.getName()+";");
 				}
 			} else { //trying to escape our directory, probably by doing http://localhost:8080/demo_download?file=../../../
-				Account account = MySQL.getAccounts(ds).queryAccountFromID(req.session().get("id").intValue());
-				Result result = Results.html("dashboard_page_template").
-						put("content", "File not found!").
-						put("title", "The Mix Hub Online - Dashboard").
-						put("full_name", account.getFirstname() + " " + account.getLastname()).
-						put("sidenav", SideNavigation.generate(req, account)).
-						put("notification_count", Notifications.count(req, account)).
-						put("notification_list", Notifications.generate(req, account));
-				return result;
+				//log?
 			}
 		}
+
+		Account account = MySQL.getAccounts(ds).queryAccountFromID(req.session().get("id").intValue());
+		Result result = Results.html("dashboard_page_template").
+				put("content", "File not found!").
+				put("title", "The Mix Hub Online - Jobs").
+				put("breadcrumb", BreadCrumbs.instance().href("/dashboard", "Dashboard").title("Jobs")).
+				put("sidenav", SideNavigation.generate(req, account, SideNavigation.ActivePage.JOBS)).
+				put("full_name", account.getFirstname() + " " + account.getLastname()).
+				put("notification_count", Notifications.count(req, account)).
+				put("notification_list", Notifications.generate(req, account));
+		return result;
 	}
 }

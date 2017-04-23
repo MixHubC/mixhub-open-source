@@ -203,7 +203,9 @@
  */
 package online.themixhub.demo.sql.impl;
 
-import online.themixhub.demo.utils.Stage;
+import online.themixhub.demo.logic.Stage;
+
+import java.util.Date;
 
 /**
  * Used to define the job object
@@ -214,12 +216,14 @@ public class Job {
 
 	private int id;
 	private int owner_id;
+	private String owner_ip;
 	private int engineer_id;
 	private Stage stage;
 	private String title;
 	private long date;
 	private int anonymous_engineer;
 	private long last_activity_date;
+	private Date dateObject;
 
 	public int getId() {
 		return id;
@@ -237,6 +241,14 @@ public class Job {
 		this.owner_id = owner_id;
 	}
 
+	public String getOwner_ip() {
+		return owner_ip;
+	}
+
+	public void setOwner_ip(String owner_ip) {
+		this.owner_ip = owner_ip;
+	}
+
 	public int getEngineer_id() {
 		return engineer_id;
 	}
@@ -249,50 +261,8 @@ public class Job {
 		return stage;
 	}
 
-	public void setStage(int stage) {
-		
-		switch (stage) {
-		
-		case 0:
-			setStage(Stage.ENGINEER_WAITING_TO_CLAIM);
-			break;
-			
-		case 1:
-			setStage(Stage.ENGINEER_CLAIMED_WAITING_REVIEW);
-			break;
-			
-		case 2:
-			setStage(Stage.USER_WAITING_RESPONSE);
-			break;
-			
-		case 3:
-			setStage(Stage.ENGINEER_TIER_2_WAITING);
-			break;
-			
-		case 4:
-			setStage(Stage.USER_TIER_2_WAITING_RESPONSE);
-			break;
-			
-		case 5:
-			setStage(Stage.ENGINEER_TIER_3_WAITING);
-			break;
-			
-		case 6:
-			setStage(Stage.ENGINEER_JOB_FINISHED);
-			break;
-			
-		case 7:
-			setStage(Stage.USER_JOB_FINISHED);
-			break;
-			
-		case 8:
-			setStage(Stage.UNKNOWN_STAGE);
-			break;
-			
-			default:
-				setStage(Stage.UNKNOWN_STAGE);
-		}
-
+	public void setStage(int stageID) {
+		setStage(Stage.getStageFromID(stageID));
 	}
 
 	public void setStage(Stage stage) {
@@ -313,6 +283,9 @@ public class Job {
 
 	public void setDate(long date) {
 		this.date = date;
+		if(dateObject != null) {
+			dateObject = new Date(date);
+		}
 	}
 
 	public int getAnonymous_engineer() {
@@ -329,5 +302,12 @@ public class Job {
 
 	public void setLast_activity_date(long last_activity_date) {
 		this.last_activity_date = last_activity_date;
+	}
+
+	public Date getDateObject () {
+		if(dateObject == null) {
+			dateObject = new Date(date);
+		}
+		return dateObject;
 	}
 }
