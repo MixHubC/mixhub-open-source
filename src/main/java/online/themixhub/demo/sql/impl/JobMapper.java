@@ -214,7 +214,8 @@ public class JobMapper implements RowMapper<Job> {
     public Job mapRow(ResultSet rs, int rowNum) throws SQLException {
 		Job job = new Job();
         job.setId(rs.getInt("id"));
-        job.setOwner_id(rs.getInt("owner_id"));
+		job.setOwner_id(rs.getInt("owner_id"));
+		job.setOwner_ip(rs.getString("owner_ip"));
         job.setEngineer_id(rs.getInt("engineer_id"));
         job.setTitle(rs.getString("title"));
         job.setDate(rs.getLong("date"));

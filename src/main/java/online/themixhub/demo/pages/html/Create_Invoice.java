@@ -203,61 +203,211 @@
  */
 package online.themixhub.demo.pages.html;
 
+import com.google.inject.Inject;
+import online.themixhub.demo.pages.html.generators.BreadCrumbs;
+import online.themixhub.demo.pages.html.generators.Notifications;
+import online.themixhub.demo.pages.html.generators.SideNavigation;
+import online.themixhub.demo.sql.MySQL;
 import online.themixhub.demo.sql.impl.Account;
-import online.themixhub.demo.utils.PermissionUtils;
+import online.themixhub.demo.sql.impl.Invoice;
+import online.themixhub.demo.utils.SessionUtils;
 import org.jooby.Request;
+import org.jooby.Result;
+import org.jooby.Results;
+import org.jooby.mvc.GET;
+import org.jooby.mvc.POST;
+import org.jooby.mvc.Path;
 
-/**
- * Created by John on 4/7/2017.
- */
-public class SideNavigation {
+import javax.sql.DataSource;
+import java.io.IOException;
+import java.math.BigDecimal;
+import java.util.Date;
+import java.util.HashMap;
 
-	public static String generate(Request req, Account account) {
-		if(PermissionUtils.isAdmin(account)) {
-			return generateSideBarAdmin(req, account);
-		} else if(PermissionUtils.isEngineer(account)) {
-			return generateSideBarEngineer(req, account);
+@Path("/create_invoice")
+public class Create_Invoice {
+
+	private DataSource ds;
+
+	//for when we use SQL
+	@Inject
+	public Create_Invoice(DataSource ds) {
+		this.ds = ds;
+	}
+
+	@GET
+	public Result getPageGET(Request req) throws IOException {
+		SessionUtils.handleSessionDestroy(req);
+		if (!req.session().isSet("set")) {
+			return Results.redirect("/");
 		} else {
-			return generateSideBarUser(req, account);
+			Account account = MySQL.getAccounts(ds).queryAccountFromID(req.session().get("id").intValue());
+
+			HashMap<Integer, Account> accountCacheMap = new HashMap<Integer, Account>();
+			accountCacheMap.put(account.getId(), account);
+
+			if(req.param("product_id").isSet()) {
+				return previewProduct(req, account, accountCacheMap);
+			} else {
+				return Results.redirect("/");
+			}
 		}
 	}
 
-	private static String generateSideBarAdmin(Request req, Account account) {
-		StringBuilder sb = new StringBuilder();
+	@POST
+	public Result getPagePOST(Request req) throws IOException {
+		SessionUtils.handleSessionDestroy(req);
+		if (!req.session().isSet("set")) {
+			return Results.redirect("/");
+		} else {
+			Account account = MySQL.getAccounts(ds).queryAccountFromID(req.session().get("id").intValue());
 
-		sb.append("     <ul class=\"collapsible collapsible-accordion\">\n" +
-				"                    <li><a href=\"/dashboard\" class=\"collapsible-header waves-effect arrow-r\"><i class=\"fa fa-code\"></i> Dashboard</a>\n" +
-				"                    <li><a href=\"invoice.html\" class=\"collapsible-header waves-effect arrow-r\"><i class=\"fa fa-money\"></i> Invoice</a>\n" +
-				"                    <li><a href=\"support.html\" class=\"collapsible-header waves-effect arrow-r\"><i class=\"fa fa-support\"></i> Support</a>\n" +
-				"                    <li><a href=\"faq.html\" class=\"collapsible-header waves-effect arrow-r\"><i class=\"fa fa-question-circle\" aria-hidden=\"true\"></i> FAQ</a>\n" +
-				"                </ul>");
+			HashMap<Integer, Account> accountCacheMap = new HashMap<Integer, Account>();
+			accountCacheMap.put(account.getId(), account);
 
-		return sb.toString();
+			if(req.param("product_id").isSet()) {
+
+
+
+				if(req.param("product_id").intValue() == 1) {
+					Invoice invoice = new Invoice();
+					invoice.setDate(System.currentTimeMillis());
+					invoice.setProduct_id(1);
+					invoice.setAmount(new BigDecimal(9999.99).setScale(2, BigDecimal.ROUND_HALF_UP));
+					invoice.setAmount_tax(new BigDecimal(1199.99).setScale(2, BigDecimal.ROUND_HALF_UP));
+					invoice.setAmount_total(new BigDecimal(11199.99).setScale(2, BigDecimal.ROUND_HALF_UP));
+					invoice.setOwner_id(account.getId());
+					invoice.setOwner_ip(req.ip());
+					invoice.setStage(0);
+
+					int invoiceID = MySQL.getInvoices(ds).insert(invoice);
+
+					return Results.redirect("/invoices?id="+invoiceID);
+				} else {
+					return Results.redirect("/");
+				}
+			} else {
+				return Results.redirect("/");
+			}
+		}
 	}
 
-	private static String generateSideBarEngineer(Request req, Account account) {
-		StringBuilder sb = new StringBuilder();
+	public Result previewProduct(Request req, Account account, HashMap<Integer, Account> accountCacheMap) {
+		String html = "<div class=\"container\">\n" +
+				"    <div class=\"row\">\n" +
+				"        <div class=\"col-xl-12\">\n" +
+				"    <div class=\"invoice-title\">\n" +
+				"    <h2>Invoice</h2><h3 class=\"pull-right\"></h3>\n" +
+				"    </div>\n" +
+				"    <hr>\n" +
+				"    <div class=\"row\">\n" +
+				"    <div class=\"col-xl-12 text-right\">\n" +
+				"    <address>\n" +
+				"    <strong>Order Date:</strong><br>\n" +
+				"    "+new Date(System.currentTimeMillis())+"\n" +
+				"    </address>\n" +
+				"    </div>\n" +
+				"    </div>\n" +
+				"    <div class=\"row\">\n" +
+				"    <div class=\"col-xl-12\">\n" +
+				"    <address>\n" +
+				"    <strong>Billed To:</strong><br>\n" +
+				"    "+account.getFirstname() + " " + account.getLastname()+"<br>\n" +
+				"    "+account.getAddress_1() + "<br>\n" +
+				"    "+(account.getAddress_2() == null ? ("") : (account.getAddress_2()+"+<br>\n")) +
+				"    "+account.getCity()+", "+account.getState()+" "+account.getZip()+"\n" +
+				"    </address>\n" +
+				"    </div>\n" +
+				"    </div>\n" +
+				"    </div>\n" +
+				"    </div>\n" +
+				"    \n" +
+				"    <div class=\"row\">\n" +
+				"    <div class=\"col-md-12\">\n" +
+				"    <div class=\"panel panel-default\">\n" +
+				"    <div class=\"panel-heading\">\n" +
+				"    <h3 class=\"panel-title\" style=\"color:#000\"><strong>Order summary</strong></h3>\n" +
+				"    </div>\n" +
+				"    <div class=\"panel-body\">\n" +
+				"    <div class=\"table-responsive\">\n" +
+				"    <table class=\"table table-condensed\">\n" +
+				"    <thead>\n" +
+				"                                <tr>\n" +
+				"        <td><strong>Item</strong></td>\n" +
+				"        <td class=\"text-center\"><strong>Price</strong></td>\n" +
+				"        <td class=\"text-center\"><strong>Quantity</strong></td>\n" +
+				"        <td class=\"text-right\"><strong>Totals</strong></td>\n" +
+				"                                </tr>\n" +
+				"    </thead>\n" +
+				"    <tbody>\n" +
+				"    <!-- foreach ($order->lineItems as $line) or some such thing here -->\n" +
+				"    <tr>\n" +
+				"    <td>Song Mix</td>\n" +
+				"    <td class=\"text-center\">$9999.99</td>\n" +
+				"    <td class=\"text-center\">1</td>\n" +
+				"    <td class=\"text-right\">$9999.99</td>\n" +
+				"    </tr>\n" +
+				"    <tr>\n" +
+				"    <td class=\"thick-line\"></td>\n" +
+				"    <td class=\"thick-line\"></td>\n" +
+				"    <td class=\"thick-line text-center\"><strong>Subtotal</strong></td>\n" +
+				"    <td class=\"thick-line text-right\">$9999.99</td>\n" +
+				"    </tr>\n" +
+				"    <tr>\n" +
+				"    <td class=\"no-line\"></td>\n" +
+				"    <td class=\"no-line\"></td>\n" +
+				"    <td class=\"no-line text-center\"><strong>Tax</strong></td>\n" +
+				"    <td class=\"no-line text-right\">$1199.99</td>\n" +
+				"    </tr>\n" +
+				"    <tr>\n" +
+				"    <td class=\"no-line\"></td>\n" +
+				"    <td class=\"no-line\"></td>\n" +
+				"    <td class=\"no-line text-center\"><strong>Total</strong></td>\n" +
+				"    <td class=\"no-line text-right\">$11199.98</td>\n" +
+				"    </tr>\n" +
+				"    </tbody>\n" +
+				"    </table>\n" +
+				"    </div>\n" +
+				"    </div>\n" +
+				"    </div>\n" +
+				"    </div>\n" +
+				"    </div>\n" +
+				"<form action=\"/create_invoice\" method=\"post\">" +
+				"<input type=\"hidden\" name=\"product_id\" value=\"1\">"+
+				"<input type=\"submit\" type=\"button\" class=\"btn btn-default\" value=\"Create Invoice\"></form>" +
+			"</div>";
 
-		sb.append("     <ul class=\"collapsible collapsible-accordion\">\n" +
-				"                    <li><a href=\"/dashboard\" class=\"collapsible-header waves-effect arrow-r\"><i class=\"fa fa-code\"></i> Dashboard</a>\n" +
-				"                    <li><a href=\"invoice.html\" class=\"collapsible-header waves-effect arrow-r\"><i class=\"fa fa-money\"></i> Invoice</a>\n" +
-				"                    <li><a href=\"support.html\" class=\"collapsible-header waves-effect arrow-r\"><i class=\"fa fa-support\"></i> Support</a>\n" +
-				"                    <li><a href=\"faq.html\" class=\"collapsible-header waves-effect arrow-r\"><i class=\"fa fa-question-circle\" aria-hidden=\"true\"></i> FAQ</a>\n" +
-				"                </ul>");
-		return sb.toString();
+		if(req.param("product_id").intValue() != 1) {
+			html = "Product not found!";
+		}
+
+		String css = "<style>\n" +
+				".invoice-title h2, .invoice-title h3 {\n" +
+				"    display: inline-block;\n" +
+				"}\n" +
+				"\n" +
+				".table > tbody > tr > .no-line {\n" +
+				"    border-top: none;\n" +
+				"}\n" +
+				"\n" +
+				".table > thead > tr > .no-line {\n" +
+				"    border-bottom: none;\n" +
+				"}\n" +
+				"\n" +
+				".table > tbody > tr > .thick-line {\n" +
+				"    border-top: 2px solid;\n" +
+				"}"+
+				"</style>";
+
+		Result result = Results.html("dashboard_page_template").
+				put("content", html).
+				put("title", "The Mix Hub Online - Create Invoice").
+				put("breadcrumb", BreadCrumbs.instance().href("/dashboard", "Dashboard").href("/invoices", "Invoices").title("Create Invoice")).
+				put("sidenav", SideNavigation.generate(req, account, SideNavigation.ActivePage.INVOICES)).
+				put("full_name", account.getFirstname() + " " + account.getLastname()).
+				put("notification_count", Notifications.count(req, account)).
+				put("notification_list", Notifications.generate(req, account)).
+				put("header", css);
+		return result;
 	}
-
-	private static String generateSideBarUser(Request req, Account account) {
-		StringBuilder sb = new StringBuilder();
-
-		sb.append("     <ul class=\"collapsible collapsible-accordion\">\n" +
-				"                    <li><a href=\"/dashboard\" class=\"collapsible-header waves-effect arrow-r\"><i class=\"fa fa-code\"></i> Dashboard</a>\n" +
-				"                    <li><a href=\"invoice.html\" class=\"collapsible-header waves-effect arrow-r\"><i class=\"fa fa-money\"></i> Invoice</a>\n" +
-				"                    <li><a href=\"support.html\" class=\"collapsible-header waves-effect arrow-r\"><i class=\"fa fa-support\"></i> Support</a>\n" +
-				"                    <li><a href=\"faq.html\" class=\"collapsible-header waves-effect arrow-r\"><i class=\"fa fa-question-circle\" aria-hidden=\"true\"></i> FAQ</a>\n" +
-				"                </ul>");
-
-		return sb.toString();
-	}
-
 }

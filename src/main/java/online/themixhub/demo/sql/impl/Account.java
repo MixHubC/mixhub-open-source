@@ -206,6 +206,7 @@ package online.themixhub.demo.sql.impl;
 import org.springframework.jdbc.core.JdbcTemplate;
 
 import javax.sql.DataSource;
+import java.util.Date;
 import java.util.List;
 
 /**
@@ -215,22 +216,23 @@ import java.util.List;
  */
 public class Account {
 
-    int id;
-    int permission;
-    long date;
-    String register_ip;
-    String email;
-    String username;
-    String password;
-    String firstname;
-    String lastname;
-    String address_1;
-    String address_2;
-    String city;
-    String state;
-    String country;
-    String zip;
-    String phone;
+	private int id;
+	private int permission;
+	private long date;
+	private String register_ip;
+	private String email;
+	private String username;
+	private String password;
+	private String firstname;
+	private String lastname;
+	private String address_1;
+	private String address_2;
+	private String city;
+	private String state;
+	private String country;
+	private String zip;
+	private String phone;
+	private Date dateObject;
 
     public int getId() {
         return id;
@@ -254,6 +256,9 @@ public class Account {
 
     public void setDate(long date) {
         this.date = date;
+		if(dateObject != null) {
+			dateObject = new Date(date);
+		}
     }
 
     public String getRegister_ip() {
@@ -360,4 +365,10 @@ public class Account {
         this.phone = phone;
     }
 
+	public Date getDateObject () {
+		if(dateObject == null) {
+			dateObject = new Date(date);
+		}
+		return dateObject;
+	}
 }

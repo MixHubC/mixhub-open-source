@@ -211,7 +211,7 @@ public class LoginForm {
 
 	public String email;
 	public String password;
-	public String rememberme;
+	public String rememberMe;
 
 	public List<MediaType> list;
 

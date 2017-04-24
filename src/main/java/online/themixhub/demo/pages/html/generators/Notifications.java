@@ -201,89 +201,28 @@
  *    See the License for the specific language governing permissions and
  *    limitations under the License.
  */
-package online.themixhub.demo.sql.impl;
+package online.themixhub.demo.pages.html.generators;
 
-import java.util.Date;
+import online.themixhub.demo.sql.impl.Account;
+import org.jooby.Request;
 
 /**
- * Used to define the job comment object
- *
- * @author The Mix Hub Online
+ * Created by John on 4/7/2017.
  */
-public class JobComment {
+public class Notifications {
 
-	private int id;
-	private int job_id;
-	private int owner_id;
-	private String owner_ip;
-	private long date;
-	private String comment;
-	private String filepathsCSV;
-	private Date dateObject;
+	public static String generate(Request req, Account account) {
+		StringBuilder sb = new StringBuilder();
 
-    public int getId() {
-        return id;
-    }
+		sb.append("                        <ul>\n" +
+				"                            <li class=\"active-notification\"><i class=\"fa fa-user\" aria-hidden=\"true\"></i> New order received <span class=\"float-right grey-text\"><i class=\"fa fa-clock-o\" aria-hidden=\"true\"></i> 13 min</span></li>\n" +
+				"                            <li class=\"active-notification\"><i class=\"fa fa-life-saver\" aria-hidden=\"true\"></i> Something else <span class=\"float-right grey-text\"><i class=\"fa fa-clock-o\" aria-hidden=\"true\"></i> 1 day</span></li>\n" +
+				"                        </ul>");
 
-    public void setId(int id) {
-        this.id = id;
-    }
-
-	public int getJob_id() {
-		return job_id;
+		return sb.toString();
 	}
 
-	public void setJob_id(int job_id) {
-		this.job_id = job_id;
-	}
-
-	public long getDate() {
-		return date;
-	}
-
-	public void setDate(long date) {
-		this.date = date;
-		if(dateObject != null) {
-			dateObject = new Date(date);
-		}
-	}
-
-	public int getOwner_id() {
-		return owner_id;
-	}
-
-	public void setOwner_id(int parent_account_id) {
-		this.owner_id = parent_account_id;
-	}
-
-	public String getOwner_ip() {
-		return owner_ip;
-	}
-
-	public void setOwner_ip(String owner_ip) {
-		this.owner_ip = owner_ip;
-	}
-
-	public String getComment() {
-		return comment;
-	}
-
-	public void setComment(String comment) {
-		this.comment = comment;
-	}
-
-	public String getFilepathsCSV() {
-		return filepathsCSV;
-	}
-
-	public void setFilepathsCSV(String filepathsCSV) {
-		this.filepathsCSV = filepathsCSV;
-	}
-
-	public Date getDateObject () {
-		if(dateObject == null) {
-			dateObject = new Date(date);
-		}
-		return dateObject;
+	public static int count(Request req, Account account) {
+		return 2;
 	}
 }

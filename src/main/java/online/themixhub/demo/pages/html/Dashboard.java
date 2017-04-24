@@ -204,13 +204,16 @@
 package online.themixhub.demo.pages.html;
 
 import com.google.inject.Inject;
+import online.themixhub.demo.pages.html.generators.BreadCrumbs;
+import online.themixhub.demo.pages.html.generators.Notifications;
+import online.themixhub.demo.pages.html.generators.SideNavigation;
+import online.themixhub.demo.sql.impl.Invoice;
 import online.themixhub.demo.sql.impl.Job;
-import online.themixhub.demo.sql.impl.JobComment;
+import online.themixhub.demo.utils.InvoiceUtils;
 import online.themixhub.demo.utils.PermissionUtils;
 import online.themixhub.demo.utils.SessionUtils;
 import online.themixhub.demo.sql.MySQL;
 import online.themixhub.demo.sql.impl.Account;
-import online.themixhub.demo.utils.StageUtils;
 import org.jooby.Request;
 import org.jooby.Result;
 import org.jooby.Results;
@@ -219,8 +222,6 @@ import org.jooby.mvc.Path;
 
 import javax.sql.DataSource;
 import java.io.IOException;
-import java.util.Date;
-import java.util.HashMap;
 import java.util.List;
 
 @Path("/dashboard")
@@ -255,168 +256,116 @@ public class Dashboard {
 		Result result = Results.html("dashboard_page_template").
 				put("content", "Coming Soon!").
 				put("title", "The Mix Hub Online - Dashboard").
+				put("breadcrumb", BreadCrumbs.instance().title("Dashboard")).
+				put("sidenav", SideNavigation.generate(req, account, SideNavigation.ActivePage.DASHBOARD)).
 				put("full_name", account.getFirstname() + " " + account.getLastname()).
-				put("sidenav", SideNavigation.generate(req, account)).
 				put("notification_count", Notifications.count(req, account)).
 				put("notification_list", Notifications.generate(req, account));
 		return result;
 	}
 
 	public Result getPageEngineer(Request req, Account account) {
-		List<Job> engineerJobs = MySQL.getJobs(ds).queryAllJobsFromEngineerID(account.getId());
-
-		List<Job> unclaimedJobs = MySQL.getJobs(ds).queryAllUnclaimedJobs();
-
-		StringBuilder engineerSB = new StringBuilder();
-		StringBuilder unclaimedSB = new StringBuilder();
-
-		HashMap<Integer, Account> accountCacheMap = new HashMap<Integer, Account>();
-		accountCacheMap.put(account.getId(), account);
-
-		if(unclaimedJobs != null) {
-			unclaimedSB.append("</br></br>Unclaimed Engineer Jobs:");
-			unclaimedSB.append("<table style=\"width:100%\">\n" +
-					"  <tr>\n" +
-					"    <th>Date</th>\n" +
-					"    <th>Author</th> \n" +
-					"    <th>Title</th>\n" +
-					"    <th>Action</th>\n" +
-					"  </tr>");
-			for (Job job : unclaimedJobs) {
-				Account ownerAccount;
-				if(accountCacheMap.containsKey(job.getOwner_id())) {
-					ownerAccount = accountCacheMap.get(job.getOwner_id());
-				} else {
-					ownerAccount = MySQL.getAccounts(ds).queryAccountFromID(job.getOwner_id());
-					accountCacheMap.put(job.getOwner_id(), ownerAccount);
-				}
-
-				List<JobComment> commentList = MySQL.getJobComments(ds).queryAllFromJobID(job.getId());
-				String title = "";
-				String file = "";
-
-				if(commentList != null && !commentList.isEmpty()) {
-					title = job.getTitle();
-					file = commentList.get(0).getFilepaths();
-
-					if(title.length() > 32) {
-						title = title.substring(0, 32) + "...";
-					}
-				}
-
-				unclaimedSB.append("  <tr>\n" +
-						"    <td>"+new Date(job.getDate())+"</td>\n" +
-						"    <td>"+ownerAccount.getFirstname()+" "+ownerAccount.getLastname()+"</td> \n" +
-						"    <td>"+title+"</td>\n" +
-						"    <td><a href=\"/jobs?preview="+job.getId()+"\">Preview</a></td>\n" +
-						"  </tr>");
-			}
-			unclaimedSB.append("</table>");
-		} else {
-			unclaimedSB.append("</br></br>No unclaimed jobs! Check back later.");
-		}
-
-		if(engineerJobs == null) {
-			Result result = Results.html("dashboard_page_template").
-					put("content", "You currently have no jobs claimed!" + unclaimedSB.toString()).
-					put("title", "The Mix Hub Online - Dashboard").
-					put("full_name", account.getFirstname() + " " + account.getLastname()).
-					put("sidenav", SideNavigation.generate(req, account)).
-					put("notification_count", Notifications.count(req, account)).
-					put("notification_list", Notifications.generate(req, account));
-			return result;
-		} else {
-			engineerSB.append("Your Claimed Jobs:</br>");
-			engineerSB.append("<table style=\"width:100%\">\n" +
-					"  <tr>\n" +
-					"    <th>Date</th>\n" +
-					"    <th>Author</th> \n" +
-					"    <th>Title</th>\n" +
-					"    <th>Stage</th>\n" +
-					"    <th>Action</th>\n" +
-					"  </tr>");
-			for (Job job : engineerJobs) {
-				Account ownerAccount;
-				if(accountCacheMap.containsKey(job.getOwner_id())) {
-					ownerAccount = accountCacheMap.get(job.getOwner_id());
-				} else {
-					ownerAccount = MySQL.getAccounts(ds).queryAccountFromID(job.getOwner_id());
-					accountCacheMap.put(job.getOwner_id(), ownerAccount);
-				}
-
-				List<JobComment> commentList = MySQL.getJobComments(ds).queryAllFromJobID(job.getId());
-				String comment = "";
-				String file = "";
-
-				if(commentList != null && !commentList.isEmpty()) {
-					comment = commentList.get(0).getComment();
-					file = commentList.get(0).getFilepaths();
-
-					if(comment.length() > 32) {
-						comment = comment.substring(0, 32) + "...";
-					}
-				}
-
-				engineerSB.append("  <tr>\n" +
-						"    <td>"+new Date(job.getDate())+"</td>\n" +
-						"    <td>"+ownerAccount.getFirstname()+" "+ownerAccount.getLastname()+"</td> \n" +
-						"    <td>"+comment+"</td>\n" +
-						"    <td>"+ job.getStage().getDescription()+"</td>\n" +
-						"    <td><a href=\"/jobs?id="+job.getId()+"\">View</a></td>\n" +
-						"  </tr>");
-			}
-			engineerSB.append("</table>");
-
-
-			Result result = Results.html("dashboard_page_template").
-					put("content", engineerSB.toString() + unclaimedSB.toString()).
-					put("title", "The Mix Hub Online - Dashboard").
-					put("full_name", account.getFirstname() + " " + account.getLastname()).
-					put("sidenav", SideNavigation.generate(req, account)).
-					put("notification_count", Notifications.count(req, account)).
-					put("notification_list", Notifications.generate(req, account));
-			return result;
-		}
+		Result result = Results.html("dashboard_page_template").
+				put("content", "Coming Soon!").
+				put("title", "The Mix Hub Online - Dashboard").
+				put("breadcrumb", BreadCrumbs.instance().title("Dashboard")).
+				put("sidenav", SideNavigation.generate(req, account, SideNavigation.ActivePage.DASHBOARD)).
+				put("full_name", account.getFirstname() + " " + account.getLastname()).
+				put("notification_count", Notifications.count(req, account)).
+				put("notification_list", Notifications.generate(req, account));
+		return result;
 	}
 
 	public Result getPageUser(Request req, Account account) {
-		String createNewJob = "Create A New Job:\n" +
-				"<form action=\"/job_create\" method=\"post\" enctype=\"multipart/form-data\" id=\"jobform\"> </br>\n" +
-				"  Title: </br>\n" +
-				"  <input type=\"text\" name=\"title\"> </br>\n" +
-				"  Comments: </br>\n" +
-				"  <textarea name=\"comments\" form=\"jobform\" rows=\"4\" cols=\"50\"></textarea></br>\n" +
-				"  MP3 or WAV: </br>\n" +
-				"  <input type=\"file\" name=\"file\" accept=\"*\"></br></br>\n" +
-				"  <input type=\"submit\">\n" +
-				"</form>";
 
-		List<Job> jobs = MySQL.getJobs(ds).queryAllJobsFromUserID(account.getId());
-		if(jobs == null) {
-			Result result = Results.html("dashboard_page_template").
-					put("content", createNewJob).
-					put("title", "The Mix Hub Online - Dashboard").
-					put("full_name", account.getFirstname() + " " + account.getLastname()).
-					put("sidenav", SideNavigation.generate(req, account)).
-					put("notification_count", Notifications.count(req, account)).
-					put("notification_list", Notifications.generate(req, account));
-			return result;
-		} else {
-			StringBuilder jobSB = new StringBuilder();
-			jobSB.append("Jobs:</br>");
-			for(Job job : jobs) {
-				jobSB.append("+ Job: <a href=\"/jobs?id="+job.getId()+"\">"+job.getTitle()+"</a> - "+job.getStage().getDescription()+"</br>");
+		String html = "";
+
+		List<Job> jobs = MySQL.getJobs(ds).queryAllJobsFromOwnerID(account.getId(), 10);
+
+		if(jobs != null) {
+			html += "                        <div class=\"card mb-r\">\n" +
+					"                            <div class=\"card-block\">\n" +
+					"                                <table class=\"table large-header\">\n" +
+					"                                    <thead>\n" +
+					"                                        <tr>\n" +
+					"                                            <th>Job</th>\n" +
+					"                                            <th>Stage</th>\n" +
+					"                                            <th>Action</th>\n" +
+					"                                        </tr>\n" +
+					"                                    </thead>\n" +
+					"                                    <tbody>\n";
+
+			for (Job job : jobs) {
+				html += "                                        <tr>\n" +
+						"                                            <td>"+job.getTitle()+"</td>\n" +
+						"                                            <td>"+job.getStage().getDescription()+"</td>\n" +
+						"                                            <td><a href=\"/jobs?id="+job.getId()+"\">View</a></td>\n" +
+						"                                        </tr>\n";
 			}
 
-			Result result = Results.html("dashboard_page_template").
-					put("content", jobSB.toString()+"</br></br>"+createNewJob).
-					put("title", "The Mix Hub Online - Dashboard").
-					put("full_name", account.getFirstname() + " " + account.getLastname()).
-					put("sidenav", SideNavigation.generate(req, account)).
-					put("notification_count", Notifications.count(req, account)).
-					put("notification_list", Notifications.generate(req, account));
-			return result;
+			html += "                                    </tbody>\n" +
+					"                                </table>\n" +
+					"\n" +
+					"                                <a href=\"/jobs\"><button class=\"btn-flat waves-effect float-right\">View All</button></a>\n" +
+					"\n" +
+					"                            </div>\n" +
+					"\n" +
+					"                        </div>\n" +
+					"\n" +
+					"                    </div>\n" +
+					"                </div>         ";
+		} else {
+			html += "You have no jobs created. <a href=\"/jobs\">Click here</a> to create a new job.</br>";
 		}
+
+		List<Invoice> invoices = MySQL.getInvoices(ds).queryAllInvoicesFromOwnerID(account.getId(), 10);
+
+		if(invoices != null) {
+			html += "                        <div class=\"card mb-r\">\n" +
+					"                            <div class=\"card-block\">\n" +
+					"                                <table class=\"table large-header\">\n" +
+					"                                    <thead>\n" +
+					"                                        <tr>\n" +
+					"                                            <th>Invoice</th>\n" +
+					"                                            <th>Paid</th>\n" +
+					"                                            <th>Action</th>\n" +
+					"                                        </tr>\n" +
+					"                                    </thead>\n" +
+					"                                    <tbody>\n";
+
+
+			for (Invoice invoice : invoices) {
+				html += "                                        <tr>\n" +
+						"                                            <td>#"+invoice.getId()+" - "+invoice.getDateObject()+"</td>\n" +
+						"                                            <td>"+ InvoiceUtils.stageToStringDescription(invoice.getStage())+"</td>\n" +
+						"                                            <td><a href=\"/invoices?id="+invoice.getId()+"\">View</a></td>\n" +
+						"                                        </tr>\n";
+			}
+
+			html += "                                    </tbody>\n" +
+					"                                </table>\n" +
+					"\n" +
+					"                                <a href=\"/invoices\"><button class=\"btn-flat waves-effect float-right\">View All</button></a>\n" +
+					"\n" +
+					"                            </div>\n" +
+					"\n" +
+					"                        </div>\n" +
+					"\n" +
+					"                    </div>\n" +
+					"                </div>         ";
+		} else {
+			html += "You have no invoices created. <a href=\"/invoices\">Click here</a> to make a new invoice.</br>";
+		}
+
+		Result result = Results.html("dashboard_page_template").
+				put("content", html).
+				put("title", "The Mix Hub Online - Dashboard").
+				put("breadcrumb", BreadCrumbs.instance().title("Dashboard")).
+				put("sidenav", SideNavigation.generate(req, account, SideNavigation.ActivePage.DASHBOARD)).
+				put("full_name", account.getFirstname() + " " + account.getLastname()).
+				put("notification_count", Notifications.count(req, account)).
+				put("notification_list", Notifications.generate(req, account));
+		return result;
 	}
 
 

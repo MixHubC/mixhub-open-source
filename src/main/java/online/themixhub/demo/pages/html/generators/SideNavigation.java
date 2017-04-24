@@ -201,89 +201,75 @@
  *    See the License for the specific language governing permissions and
  *    limitations under the License.
  */
-package online.themixhub.demo.sql.impl;
+package online.themixhub.demo.pages.html.generators;
 
-import java.util.Date;
+import online.themixhub.demo.sql.impl.Account;
+import online.themixhub.demo.utils.PermissionUtils;
+import org.jooby.Request;
 
 /**
- * Used to define the job comment object
- *
- * @author The Mix Hub Online
+ * Created by John on 4/7/2017.
  */
-public class JobComment {
+public class SideNavigation {
 
-	private int id;
-	private int job_id;
-	private int owner_id;
-	private String owner_ip;
-	private long date;
-	private String comment;
-	private String filepathsCSV;
-	private Date dateObject;
-
-    public int getId() {
-        return id;
-    }
-
-    public void setId(int id) {
-        this.id = id;
-    }
-
-	public int getJob_id() {
-		return job_id;
+	public enum ActivePage {
+		NONE,
+		DASHBOARD,
+		ADMIN,
+		JOBS,
+		INVOICES,
+		SUPPORT,
+		FAQ
 	}
 
-	public void setJob_id(int job_id) {
-		this.job_id = job_id;
-	}
-
-	public long getDate() {
-		return date;
-	}
-
-	public void setDate(long date) {
-		this.date = date;
-		if(dateObject != null) {
-			dateObject = new Date(date);
+	public static String generate(Request req, Account account, ActivePage page) {
+		if(PermissionUtils.isAdmin(account)) {
+			return generateSideBarAdmin(req, account, page);
+		} else if(PermissionUtils.isEngineer(account)) {
+			return generateSideBarEngineer(req, account, page);
+		} else {
+			return generateSideBarUser(req, account, page);
 		}
 	}
 
-	public int getOwner_id() {
-		return owner_id;
+	private static String generateSideBarAdmin(Request req, Account account, ActivePage page) {
+		StringBuilder sb = new StringBuilder();
+
+		sb.append("     <ul class=\"collapsible collapsible-accordion\">\n" +
+				"                    <li><a href=\"/dashboard\" class=\"collapsible-header waves-effect arrow-r"+(page == ActivePage.DASHBOARD ? " active" : "")+"\"><i class=\"fa fa-code\"></i> Dashboard</a>\n" +
+				"                    <li><a href=\"/admin\" class=\"collapsible-header waves-effect arrow-r"+(page == ActivePage.ADMIN ? " active" : "")+"\"><i class=\"fa fa-cogs\"></i> Admin</a>\n" +
+				"                    <li><a href=\"/jobs\" class=\"collapsible-header waves-effect arrow-r"+(page == ActivePage.JOBS ? " active" : "")+"\"><i class=\"fa fa-suitcase\"></i> Jobs</a>\n" +
+				"                    <li><a href=\"/support\" class=\"collapsible-header waves-effect arrow-r"+(page == ActivePage.SUPPORT ? " active" : "")+"\"><i class=\"fa fa-support\"></i> Support</a>\n" +
+				"                    <li><a href=\"/faq\" class=\"collapsible-header waves-effect arrow-r"+(page == ActivePage.FAQ ? " active" : "")+"\"><i class=\"fa fa-question-circle\" aria-hidden=\"true\"></i> FAQ</a>\n" +
+				"                </ul>");
+
+		return sb.toString();
 	}
 
-	public void setOwner_id(int parent_account_id) {
-		this.owner_id = parent_account_id;
+	private static String generateSideBarEngineer(Request req, Account account, ActivePage page) {
+		StringBuilder sb = new StringBuilder();
+
+		sb.append("     <ul class=\"collapsible collapsible-accordion\">\n" +
+				"                    <li><a href=\"/dashboard\" class=\"collapsible-header waves-effect arrow-r"+(page == ActivePage.DASHBOARD ? " active" : "")+"\"><i class=\"fa fa-code\"></i> Dashboard</a>\n" +
+				"                    <li><a href=\"/jobs\" class=\"collapsible-header waves-effect arrow-r"+(page == ActivePage.JOBS ? " active" : "")+"\"><i class=\"fa fa-suitcase\"></i> Jobs</a>\n" +
+				"                    <li><a href=\"/support\" class=\"collapsible-header waves-effect arrow-r"+(page == ActivePage.SUPPORT ? " active" : "")+"\"><i class=\"fa fa-support\"></i> Support</a>\n" +
+				"                    <li><a href=\"/faq\" class=\"collapsible-header waves-effect arrow-r"+(page == ActivePage.FAQ ? " active" : "")+"\"><i class=\"fa fa-question-circle\" aria-hidden=\"true\"></i> FAQ</a>\n" +
+				"                </ul>");
+		return sb.toString();
 	}
 
-	public String getOwner_ip() {
-		return owner_ip;
+	private static String generateSideBarUser(Request req, Account account, ActivePage page) {
+		StringBuilder sb = new StringBuilder();
+
+		sb.append("     <ul class=\"collapsible collapsible-accordion\">\n" +
+				"                    <li><a href=\"/dashboard\" class=\"collapsible-header waves-effect arrow-r"+(page == ActivePage.DASHBOARD ? " active" : "")+"\"><i class=\"fa fa-code\"></i> Dashboard</a>\n" +
+				"                    <li><a href=\"/jobs\" class=\"collapsible-header waves-effect arrow-r"+(page == ActivePage.JOBS ? " active" : "")+"\"><i class=\"fa fa-suitcase\"></i> Jobs</a>\n" +
+				"                    <li><a href=\"/invoices\" class=\"collapsible-header waves-effect arrow-r"+(page == ActivePage.INVOICES ? " active" : "")+"\"><i class=\"fa fa-money\"></i> Invoices</a>\n" +
+				"                    <li><a href=\"/support\" class=\"collapsible-header waves-effect arrow-r"+(page == ActivePage.SUPPORT ? " active" : "")+"\"><i class=\"fa fa-support\"></i> Support</a>\n" +
+				"                    <li><a href=\"/faq\" class=\"collapsible-header waves-effect arrow-r"+(page == ActivePage.FAQ ? " active" : "")+"\"><i class=\"fa fa-question-circle\" aria-hidden=\"true\"></i> FAQ</a>\n" +
+				"                </ul>");
+
+		return sb.toString();
 	}
 
-	public void setOwner_ip(String owner_ip) {
-		this.owner_ip = owner_ip;
-	}
-
-	public String getComment() {
-		return comment;
-	}
-
-	public void setComment(String comment) {
-		this.comment = comment;
-	}
-
-	public String getFilepathsCSV() {
-		return filepathsCSV;
-	}
-
-	public void setFilepathsCSV(String filepathsCSV) {
-		this.filepathsCSV = filepathsCSV;
-	}
-
-	public Date getDateObject () {
-		if(dateObject == null) {
-			dateObject = new Date(date);
-		}
-		return dateObject;
-	}
 }

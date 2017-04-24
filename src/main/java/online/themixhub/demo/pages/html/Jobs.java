@@ -204,14 +204,17 @@
 package online.themixhub.demo.pages.html;
 
 import com.google.inject.Inject;
+import online.themixhub.demo.pages.html.generators.BreadCrumbs;
+import online.themixhub.demo.pages.html.generators.Notifications;
+import online.themixhub.demo.pages.html.generators.SideNavigation;
 import online.themixhub.demo.sql.MySQL;
 import online.themixhub.demo.sql.impl.Account;
+import online.themixhub.demo.sql.impl.Invoice;
 import online.themixhub.demo.sql.impl.Job;
 import online.themixhub.demo.sql.impl.JobComment;
 import online.themixhub.demo.utils.PermissionUtils;
 import online.themixhub.demo.utils.SessionUtils;
-import online.themixhub.demo.utils.Stage;
-import online.themixhub.demo.utils.StageUtils;
+import online.themixhub.demo.logic.Stage;
 import org.jooby.Request;
 import org.jooby.Result;
 import org.jooby.Results;
@@ -248,203 +251,400 @@ public class Jobs {
 			accountCacheMap.put(account.getId(), account);
 
 			if(req.param("id").isSet()) {
-				int id = req.param("id", "js", "html", "uri").intValue();
-				Job job = MySQL.getJobs(ds).queryJobFromID(id);
-
-				if(job == null) {
-					Result result = Results.html("jobs").
-							put("message", "Invalid job");
-					return result;
-				}
-
-				if(PermissionUtils.isEngineer(account) ||
-						PermissionUtils.isAdmin(account) ||
-						job.getOwner_id() == account.getId())
-				{
-					List<JobComment> comments = MySQL.getJobComments(ds).queryAllFromJobID(job.getId());
-
-					Account author;
-					if(accountCacheMap.containsKey(job.getOwner_id())) {
-						author = accountCacheMap.get(job.getOwner_id());
-					} else {
-						author = MySQL.getAccounts(ds).queryAccountFromID(job.getOwner_id());
-						accountCacheMap.put(job.getOwner_id(), author);
-					}
-
-					String jobDetails = "<table style=\"width:100%\">\n" +
-							"  <tr align=\"left\">\n" +
-							"    <th>Stage</th> \n" +
-							"    <th>Title</th>\n" +
-							"    <th>Owner</th> \n" +
-							"    <th>Date</th>\n" +
-							"  </tr>\n" +
-							"  <tr align=\"left\">\n" +
-							"    <td>"+ job.getStage().getDescription()+"</td>\n" +
-							"    <td>"+job.getTitle()+"</td>\n" +
-							"    <td>"+author.getFirstname()+ " " + author.getLastname()+"</td> \n" +
-							"    <td>"+new Date(job.getDate())+"</td>\n" +
-							"  </tr>\n" +
-							"</table></br></br>\n" +
-							"\n" +
-							"\n" +
-							"\n" +
-							"<table>\n" +
-							"  <tr>\n" +
-							"    <th>Author</th>\n" +
-							"    <th>Comment</th> \n" +
-							"    <th>File</th>\n" +
-							"  </tr>\n";
-					for(JobComment jobComment : comments) {
-						Account commetAuthor;
-						if(accountCacheMap.containsKey(jobComment.getParent_account_id())) {
-							commetAuthor = accountCacheMap.get(jobComment.getParent_account_id());
-						} else {
-							commetAuthor = MySQL.getAccounts(ds).queryAccountFromID(jobComment.getParent_account_id());
-							accountCacheMap.put(jobComment.getParent_account_id(), commetAuthor);
-						}
-						jobDetails += "  <tr>\n";
-						if(PermissionUtils.isEngineer(commetAuthor)) {
-							if(job.getAnonymous_engineer() == 0) {
-								jobDetails += "    <td>Engineer: " + commetAuthor.getFirstname() + " " + commetAuthor.getLastname() + ":</td>\n";
-							} else {
-								jobDetails += "    <td>Engineer: Anonymous:</td>\n";
-							}
-						} else {
-							jobDetails += "    <td>User: " + commetAuthor.getFirstname() + " " + commetAuthor.getLastname() + ":</td>\n";
-						}
-
-						jobDetails += "    <td>"+jobComment.getComment()+"</td> \n";
-						if(jobComment.getFilepaths() == null)
-							jobDetails += "    <td></td>\n";
-						else
-							jobDetails += "    <td><a href=\"/job_download?file="+new File(jobComment.getFilepaths()).getName()+"\">Click Here</a></td>\n";
-						jobDetails += "  </tr>\n";
-					}
-
-					jobDetails += "</table></br></br>\n" +
-							"\n" +
-							"Create A New Job Comment:\n" +
-							"<form action=\"/job_comment\" method=\"post\" enctype=\"multipart/form-data\" id=\"jobform\"> </br>\n" +
-							"  Comment: </br>\n" +
-							"  <textarea name=\"comments\" form=\"jobform\" rows=\"4\" cols=\"50\"></textarea></br>\n" +
-							"  MP3 or WAV: </br>\n" +
-							"  <input type=\"file\" name=\"file\" accept=\"*\"></br></br>\n" +
-							"  <input type=\"hidden\" name=\"jobID\" value=\""+job.getId()+"\"></br></br>\n" +
-							"  <input type=\"submit\">\n" +
-							"</form>";
-
-					if(PermissionUtils.isEngineer(account) && (job.getStage() == Stage.ENGINEER_CLAIMED_WAITING_REVIEW
-							|| job.getStage() == Stage.ENGINEER_TIER_2_WAITING || 
-							job.getStage() == Stage.ENGINEER_TIER_3_WAITING )) {
-						jobDetails += "<form action=\"/job_progress_engineer\" method=\"post\">\n" +
-								"  <input type=\"hidden\" name=\"jobID\" value=\""+job.getId()+"\"><br>\n" +
-								"  <button type=\"submit\">Set Review As Finished</button>\n" +
-								"</form>";
-					} else if(PermissionUtils.isUser(account) && (job.getStage() == Stage.USER_WAITING_RESPONSE || 
-							job.getStage() == Stage.USER_TIER_2_WAITING_RESPONSE)) {
-						jobDetails += "<form action=\"/job_progress_user\" method=\"post\">\n" +
-								"  <input type=\"hidden\" name=\"jobID\" value=\""+job.getId()+"\"><br>\n" +
-								"  <button type=\"submit\">Request Revision</button>\n" +
-								"  <button type=\"submit\"formaction=\"/job_finish_user\" >Accept As Finished</button>\n" +
-								"</form>";
-					}
-
-					Result result = Results.html("dashboard_page_template").
-							put("content", jobDetails).
-							put("title", "The Mix Hub Online - Dashboard").
-							put("full_name", account.getFirstname() + " " + account.getLastname()).
-							put("sidenav", SideNavigation.generate(req, account)).
-							put("notification_count", Notifications.count(req, account)).
-							put("notification_list", Notifications.generate(req, account));
-					return result;
-				} else {
-					return Results.redirect("/dashboard");
-				}
+				return viewJob(req, account, accountCacheMap);
 			} else if(req.param("preview").isSet()) {
-				int id = req.param("preview", "js", "html", "uri").intValue();
-				Job job = MySQL.getJobs(ds).queryJobFromID(id);
-
-				if(job == null) {
-					Result result = Results.html("jobs").
-							put("message", "Invalid job");
-					return result;
-				}
-
-				if(PermissionUtils.isEngineer(account))
-				{
-					Account author;
-					if(accountCacheMap.containsKey(job.getOwner_id())) {
-						author = accountCacheMap.get(job.getOwner_id());
-					} else {
-						author = MySQL.getAccounts(ds).queryAccountFromID(job.getOwner_id());
-						accountCacheMap.put(job.getOwner_id(), author);
-					}
-
-					String jobDetails = "<a href=\"/job_accept?id="+job.getId() +
-							"\">Accept This Job Normally</a></br><a href=\"/job_accept_anonymous?id=" + job.getId() +
-							"\">Accept This Job Anonymously</a></br></br></br>" +
-							"<table style=\"width:100%\">\n" +
-							"  <tr align=\"right\">\n" +
-							"    <th>Stage</th> \n" +
-							"    <th>Title</th>\n" +
-							"    <th>Owner</th> \n" +
-							"    <th>Date</th>\n" +
-							"  </tr>\n" +
-							"  <tr align=\"right\">\n" +
-							"    <td>"+job.getStage().getDescription()+"</td>\n" +
-							"    <td>"+job.getTitle()+"</td>\n" +
-							"    <td>"+author.getFirstname()+ " " + author.getLastname()+"</td> \n" +
-							"    <td>"+new Date(job.getDate())+"</td>\n" +
-							"  </tr>\n" +
-							"</table></br></br>\n" +
-							"\n" +
-							"\n" +
-							"\n" +
-							"<table>\n" +
-							"  <tr>\n" +
-							"    <th>Author</th>\n" +
-							"    <th>Comment</th> \n" +
-							"    <th>File</th>\n" +
-							"  </tr>\n";
-					List<JobComment> comments = MySQL.getJobComments(ds).queryAllFromJobID(job.getId());
-
-					for(JobComment jobComment : comments) {
-						Account commetAuthor;
-						if(accountCacheMap.containsKey(jobComment.getParent_account_id())) {
-							commetAuthor = accountCacheMap.get(jobComment.getParent_account_id());
-						} else {
-							commetAuthor = MySQL.getAccounts(ds).queryAccountFromID(jobComment.getParent_account_id());
-							accountCacheMap.put(jobComment.getParent_account_id(), commetAuthor);
-						}
-						jobDetails += "  <tr>\n";
-						if(PermissionUtils.isEngineer(commetAuthor))
-							jobDetails += "    <td>Engineer: "+commetAuthor.getFirstname()+ " " + commetAuthor.getLastname()+":</td>\n";
-						else
-							jobDetails += "    <td>User: "+commetAuthor.getFirstname()+ " " + commetAuthor.getLastname()+":</td>\n";
-						jobDetails += "    <td>"+jobComment.getComment()+"</td> \n";
-						if(jobComment.getFilepaths() == null)
-							jobDetails += "    <td></td>\n";
-						else
-							jobDetails += "    <td><a href=\"/job_download?file="+new File(jobComment.getFilepaths()).getName()+"\">Click Here</a></td>\n";
-						jobDetails += "  </tr>\n";
-					}
-
-					jobDetails += "</table></br></br>\n";
-
-					Result result = Results.html("dashboard_page_template").
-							put("content", jobDetails).
-							put("title", "The Mix Hub Online - Jobs").
-							put("full_name", account.getFirstname() + " " + account.getLastname()).
-							put("sidenav", SideNavigation.generate(req, account)).
-							put("notification_count", Notifications.count(req, account)).
-							put("notification_list", Notifications.generate(req, account));
-					return result;
-				} else {
-					return Results.redirect("/dashboard");
-				}
+				return previewJob(req, account, accountCacheMap);
 			} else {
-				return Results.redirect("/dashboard");
+				if(PermissionUtils.isEngineer(account) ||
+						PermissionUtils.isAdmin(account))
+				{
+					return listJobsEngineer(req, account, accountCacheMap);
+				} else {
+					return listJobsUser(req, account, accountCacheMap);
+				}
 			}
 		}
 	}
+
+	private Result listJobsEngineer(Request req, Account account, HashMap<Integer, Account> accountCacheMap) {
+		List<Job> engineerJobs = MySQL.getJobs(ds).queryAllJobsFromEngineerID(account.getId());
+
+		List<Job> unclaimedJobs = MySQL.getJobs(ds).queryAllUnclaimedJobs();
+
+		StringBuilder engineerSB = new StringBuilder();
+		StringBuilder unclaimedSB = new StringBuilder();
+
+		if(unclaimedJobs != null) {
+			unclaimedSB.append("</br></br>Unclaimed Engineer Jobs:");
+			unclaimedSB.append("<table style=\"width:100%\">\n" +
+					"  <tr>\n" +
+					"    <th>Date</th>\n" +
+					"    <th>Author</th> \n" +
+					"    <th>Title</th>\n" +
+					"    <th>Action</th>\n" +
+					"  </tr>");
+			for (Job job : unclaimedJobs) {
+				Account ownerAccount;
+				if(accountCacheMap.containsKey(job.getOwner_id())) {
+					ownerAccount = accountCacheMap.get(job.getOwner_id());
+				} else {
+					ownerAccount = MySQL.getAccounts(ds).queryAccountFromID(job.getOwner_id());
+					accountCacheMap.put(job.getOwner_id(), ownerAccount);
+				}
+
+				List<JobComment> commentList = MySQL.getJobComments(ds).queryAllFromJobID(job.getId());
+				String title = "";
+				String file = "";
+
+				if(commentList != null && !commentList.isEmpty()) {
+					title = job.getTitle();
+					file = commentList.get(0).getFilepathsCSV();
+
+					if(title.length() > 32) {
+						title = title.substring(0, 32) + "...";
+					}
+				}
+
+				unclaimedSB.append("  <tr>\n" +
+						"    <td>"+job.getDateObject()+"</td>\n" +
+						"    <td>"+ownerAccount.getFirstname()+" "+ownerAccount.getLastname()+"</td> \n" +
+						"    <td>"+title+"</td>\n" +
+						"    <td><a href=\"/jobs?preview="+job.getId()+"\">Preview</a></td>\n" +
+						"  </tr>");
+			}
+			unclaimedSB.append("</table>");
+		} else {
+			unclaimedSB.append("</br></br>No unclaimed jobs! Check back later.");
+		}
+
+		if(engineerJobs == null) {
+			Result result = Results.html("dashboard_page_template").
+					put("content", "You currently have no jobs claimed!" + unclaimedSB.toString()).
+					put("title", "The Mix Hub Online - Jobs").
+					put("breadcrumb", BreadCrumbs.instance().href("/dashboard", "Dashboard").title("Jobs")).
+					put("sidenav", SideNavigation.generate(req, account, SideNavigation.ActivePage.JOBS)).
+					put("full_name", account.getFirstname() + " " + account.getLastname()).
+					put("notification_count", Notifications.count(req, account)).
+					put("notification_list", Notifications.generate(req, account));
+			return result;
+		} else {
+			engineerSB.append("Your Claimed Jobs:</br>");
+			engineerSB.append("<table style=\"width:100%\">\n" +
+					"  <tr>\n" +
+					"    <th>Date</th>\n" +
+					"    <th>Author</th> \n" +
+					"    <th>Title</th>\n" +
+					"    <th>Stage</th>\n" +
+					"    <th>Action</th>\n" +
+					"  </tr>");
+			for (Job job : engineerJobs) {
+				Account ownerAccount;
+				if(accountCacheMap.containsKey(job.getOwner_id())) {
+					ownerAccount = accountCacheMap.get(job.getOwner_id());
+				} else {
+					ownerAccount = MySQL.getAccounts(ds).queryAccountFromID(job.getOwner_id());
+					accountCacheMap.put(job.getOwner_id(), ownerAccount);
+				}
+
+				List<JobComment> commentList = MySQL.getJobComments(ds).queryAllFromJobID(job.getId());
+				String comment = "";
+				String file = "";
+
+				if(commentList != null && !commentList.isEmpty()) {
+					comment = commentList.get(0).getComment();
+					file = commentList.get(0).getFilepathsCSV();
+
+					if(comment.length() > 32) {
+						comment = comment.substring(0, 32) + "...";
+					}
+				}
+
+				engineerSB.append("  <tr>\n" +
+						"    <td>"+job.getDateObject()+"</td>\n" +
+						"    <td>"+ownerAccount.getFirstname()+" "+ownerAccount.getLastname()+"</td> \n" +
+						"    <td>"+comment+"</td>\n" +
+						"    <td>"+ job.getStage().getDescription()+"</td>\n" +
+						"    <td><a href=\"/jobs?id="+job.getId()+"\">View</a></td>\n" +
+						"  </tr>");
+			}
+			engineerSB.append("</table>");
+
+
+			Result result = Results.html("dashboard_page_template").
+					put("content", engineerSB.toString() + unclaimedSB.toString()).
+					put("title", "The Mix Hub Online - Jobs").
+					put("breadcrumb", BreadCrumbs.instance().href("/dashboard", "Dashboard").title("Jobs")).
+					put("sidenav", SideNavigation.generate(req, account, SideNavigation.ActivePage.JOBS)).
+					put("full_name", account.getFirstname() + " " + account.getLastname()).
+					put("notification_count", Notifications.count(req, account)).
+					put("notification_list", Notifications.generate(req, account));
+			return result;
+		}
+	}
+
+	private Result listJobsUser(Request req, Account account, HashMap<Integer, Account> accountCacheMap) {
+		String createNewJob = "Create A New Job:\n" +
+				"<form action=\"/job_create\" method=\"post\" enctype=\"multipart/form-data\" id=\"jobform\"> </br>\n" +
+				"  Title: </br>\n" +
+				"  <input type=\"text\" name=\"title\"> </br>\n" +
+				"  Comments: </br>\n" +
+				"  <textarea name=\"comments\" form=\"jobform\" rows=\"4\" cols=\"50\"></textarea></br>\n" +
+				"  MP3 or WAV: </br>\n" +
+				"  <input type=\"file\" name=\"file\" accept=\"*\"></br></br>\n" +
+				"  <input type=\"submit\">\n" +
+				"</form>";
+
+		String createNewInvoice = "<a href=\"/create_invoice?product_id=1\" class=\"btn btn-default\" role=\"button\">Purchase New Mix</a>";
+
+		String output = "";
+
+		List<Invoice> invoices = MySQL.getInvoices(ds).queryAllPaidButNoJobAssignedInvoicesFromOwnerID(account.getId());
+
+		if(invoices == null) {
+			output += createNewInvoice;
+		} else {
+			output += createNewJob;
+		}
+
+		List<Job> jobs = MySQL.getJobs(ds).queryAllJobsFromOwnerID(account.getId());
+		if(jobs == null) {
+			Result result = Results.html("dashboard_page_template").
+					put("content", output).
+					put("title", "The Mix Hub Online - Jobs").
+					put("breadcrumb", BreadCrumbs.instance().href("/dashboard", "Dashboard").title("Jobs")).
+					put("sidenav", SideNavigation.generate(req, account, SideNavigation.ActivePage.JOBS)).
+					put("full_name", account.getFirstname() + " " + account.getLastname()).
+					put("notification_count", Notifications.count(req, account)).
+					put("notification_list", Notifications.generate(req, account));
+			return result;
+		} else {
+			StringBuilder jobSB = new StringBuilder();
+			jobSB.append("Your Jobs:</br>");
+			for(Job job : jobs) {
+				jobSB.append("+ Job: <a href=\"/jobs?id="+job.getId()+"\">"+job.getTitle()+"</a> - "+job.getStage().getDescription()+"</br>");
+			}
+
+			Result result = Results.html("dashboard_page_template").
+					put("content", jobSB.toString()+"</br></br>"+output).
+					put("title", "The Mix Hub Online - Jobs").
+					put("breadcrumb", BreadCrumbs.instance().href("/dashboard", "Dashboard").title("Jobs")).
+					put("sidenav", SideNavigation.generate(req, account, SideNavigation.ActivePage.JOBS)).
+					put("full_name", account.getFirstname() + " " + account.getLastname()).
+					put("notification_count", Notifications.count(req, account)).
+					put("notification_list", Notifications.generate(req, account));
+			return result;
+		}
+	}
+
+	private Result viewJob(Request req, Account account, HashMap<Integer, Account> accountCacheMap) {
+		int id = req.param("id", "js", "html", "uri").intValue();
+		Job job = MySQL.getJobs(ds).queryJobFromID(id);
+
+		if(job == null) {
+			return Results.redirect("/dashboard");
+		}
+
+		if(PermissionUtils.isEngineer(account) ||
+				PermissionUtils.isAdmin(account) ||
+				job.getOwner_id() == account.getId())
+		{
+			List<JobComment> comments = MySQL.getJobComments(ds).queryAllFromJobID(job.getId());
+
+			Account author;
+			if(accountCacheMap.containsKey(job.getOwner_id())) {
+				author = accountCacheMap.get(job.getOwner_id());
+			} else {
+				author = MySQL.getAccounts(ds).queryAccountFromID(job.getOwner_id());
+				accountCacheMap.put(job.getOwner_id(), author);
+			}
+
+			String jobDetails = "<table style=\"width:100%\">\n" +
+					"  <tr align=\"right\">\n" +
+					"    <th>Stage</th> \n" +
+					"    <th>Title</th>\n" +
+					"    <th>Owner</th> \n" +
+					"    <th>Date</th>\n" +
+					"  </tr>\n" +
+					"  <tr>\n" +
+					"    <td>"+ job.getStage().getDescription()+"</td>\n" +
+					"    <td>"+job.getTitle()+"</td>\n" +
+					"    <td>"+author.getFirstname()+ " " + author.getLastname()+"</td> \n" +
+					"    <td>"+job.getDateObject()+"</td>\n" +
+					"  </tr>\n" +
+					"</table></br></br>\n" +
+					"\n" +
+					"\n" +
+					"\n" +
+					"<table>\n" +
+					"  <tr>\n" +
+					"    <th>Author</th>\n" +
+					"    <th>Comment</th> \n" +
+					"    <th>File</th>\n" +
+					"  </tr>\n";
+			for(JobComment jobComment : comments) {
+				Account commetAuthor;
+				if(accountCacheMap.containsKey(jobComment.getOwner_id())) {
+					commetAuthor = accountCacheMap.get(jobComment.getOwner_id());
+				} else {
+					commetAuthor = MySQL.getAccounts(ds).queryAccountFromID(jobComment.getOwner_id());
+					accountCacheMap.put(jobComment.getOwner_id(), commetAuthor);
+				}
+				jobDetails += "  <tr>\n";
+				if(PermissionUtils.isEngineer(commetAuthor)) {
+					if(job.getAnonymous_engineer() == 0) {
+						jobDetails += "    <td>Engineer: " + commetAuthor.getFirstname() + " " + commetAuthor.getLastname() + ":</td>\n";
+					} else {
+						jobDetails += "    <td>Engineer: Anonymous:</td>\n";
+					}
+				} else {
+					jobDetails += "    <td>User: " + commetAuthor.getFirstname() + " " + commetAuthor.getLastname() + ":</td>\n";
+				}
+
+				jobDetails += "    <td>"+jobComment.getComment()+"</td> \n";
+				if(jobComment.getFilepathsCSV() == null)
+					jobDetails += "    <td></td>\n";
+				else
+					jobDetails += "    <td><a href=\"/job_download?file="+new File(jobComment.getFilepathsCSV()).getName()+"\">Click Here</a></td>\n";
+				jobDetails += "  </tr>\n";
+			}
+
+			jobDetails += "</table></br></br>\n" +
+					"\n" +
+					"Create A New Job Comment:\n" +
+					"<form action=\"/job_comment\" method=\"post\" enctype=\"multipart/form-data\" id=\"jobform\"> </br>\n" +
+					"  Comment: </br>\n" +
+					"  <textarea name=\"comments\" form=\"jobform\" rows=\"4\" cols=\"50\"></textarea></br>\n" +
+					"  MP3 or WAV: </br>\n" +
+					"  <input type=\"file\" name=\"file\" accept=\"*\"></br></br>\n" +
+					"  <input type=\"hidden\" name=\"jobID\" value=\""+job.getId()+"\"></br></br>\n" +
+					"  <input type=\"submit\">\n" +
+					"</form>";
+
+			if(PermissionUtils.isEngineer(account) && (job.getStage() == Stage.ENGINEER_CLAIMED_WAITING_REVIEW
+					|| job.getStage() == Stage.ENGINEER_TIER_2_WAITING ||
+					job.getStage() == Stage.ENGINEER_TIER_3_WAITING )) {
+				jobDetails += "<form action=\"/job_progress_engineer\" method=\"post\">\n" +
+						"  <input type=\"hidden\" name=\"jobID\" value=\""+job.getId()+"\"><br>\n" +
+						"  <button type=\"submit\">Set Review As Finished</button>\n" +
+						"</form>";
+			} else if(PermissionUtils.isUser(account) && (job.getStage() == Stage.USER_WAITING_RESPONSE ||
+					job.getStage() == Stage.USER_TIER_2_WAITING_RESPONSE)) {
+				jobDetails += "<form action=\"/job_progress_user\" method=\"post\">\n" +
+						"  <input type=\"hidden\" name=\"jobID\" value=\""+job.getId()+"\"><br>\n" +
+						"  <button type=\"submit\">Request Revision</button>\n" +
+						"  <button type=\"submit\"formaction=\"/job_finish_user\" >Accept As Finished</button>\n" +
+						"</form>";
+			}
+
+			String breadCrumb = "";
+			if(job == null) {
+				breadCrumb = BreadCrumbs.instance().href("/dashboard", "Dashboard").title("Jobs").toString();
+			} else {
+				breadCrumb = BreadCrumbs.instance().href("/dashboard", "Dashboard").href("/jobs", "Jobs").title(job.getTitle()).toString();
+			}
+
+			Result result = Results.html("dashboard_page_template").
+					put("content", jobDetails).
+					put("title", "The Mix Hub Online - Jobs").
+					put("breadcrumb", breadCrumb).
+					put("sidenav", SideNavigation.generate(req, account, SideNavigation.ActivePage.JOBS)).
+					put("full_name", account.getFirstname() + " " + account.getLastname()).
+					put("notification_count", Notifications.count(req, account)).
+					put("notification_list", Notifications.generate(req, account));
+			return result;
+		} else {
+			return Results.redirect("/dashboard");
+		}
+	}
+
+
+	private Result previewJob(Request req, Account account, HashMap<Integer, Account> accountCacheMap) {
+		int id = req.param("preview", "js", "html", "uri").intValue();
+		Job job = MySQL.getJobs(ds).queryJobFromID(id);
+
+		if (job == null) {
+			return Results.redirect("/dashboard");
+		}
+
+		if (PermissionUtils.isEngineer(account)) {
+			Account author;
+			if (accountCacheMap.containsKey(job.getOwner_id())) {
+				author = accountCacheMap.get(job.getOwner_id());
+			} else {
+				author = MySQL.getAccounts(ds).queryAccountFromID(job.getOwner_id());
+				accountCacheMap.put(job.getOwner_id(), author);
+			}
+
+			String jobDetails = "<a href=\"/job_accept?id=" + job.getId() +
+					"\">Accept This Job Normally</a></br><a href=\"/job_accept_anonymous?id=" + job.getId() +
+					"\">Accept This Job Anonymously</a></br></br></br>" +
+					"<table style=\"width:100%\">\n" +
+					"  <tr align=\"right\">\n" +
+					"    <th>Stage</th> \n" +
+					"    <th>Title</th>\n" +
+					"    <th>Owner</th> \n" +
+					"    <th>Date</th>\n" +
+					"  </tr>\n" +
+					"  <tr>\n" +
+					"    <td>" + job.getStage().getDescription() + "</td>\n" +
+					"    <td>" + job.getTitle() + "</td>\n" +
+					"    <td>" + author.getFirstname() + " " + author.getLastname() + "</td> \n" +
+					"    <td>" + job.getDateObject() + "</td>\n" +
+					"  </tr>\n" +
+					"</table></br></br>\n" +
+					"\n" +
+					"\n" +
+					"\n" +
+					"<table>\n" +
+					"  <tr>\n" +
+					"    <th>Author</th>\n" +
+					"    <th>Comment</th> \n" +
+					"    <th>File</th>\n" +
+					"  </tr>\n";
+			List<JobComment> comments = MySQL.getJobComments(ds).queryAllFromJobID(job.getId());
+
+			for (JobComment jobComment : comments) {
+				Account commetAuthor;
+				if (accountCacheMap.containsKey(jobComment.getOwner_id())) {
+					commetAuthor = accountCacheMap.get(jobComment.getOwner_id());
+				} else {
+					commetAuthor = MySQL.getAccounts(ds).queryAccountFromID(jobComment.getOwner_id());
+					accountCacheMap.put(jobComment.getOwner_id(), commetAuthor);
+				}
+				jobDetails += "  <tr>\n";
+				if (PermissionUtils.isEngineer(commetAuthor))
+					jobDetails += "    <td>Engineer: " + commetAuthor.getFirstname() + " " + commetAuthor.getLastname() + ":</td>\n";
+				else
+					jobDetails += "    <td>User: " + commetAuthor.getFirstname() + " " + commetAuthor.getLastname() + ":</td>\n";
+				jobDetails += "    <td>" + jobComment.getComment() + "</td> \n";
+				if (jobComment.getFilepathsCSV() == null)
+					jobDetails += "    <td></td>\n";
+				else
+					jobDetails += "    <td><a href=\"/job_download?file=" + new File(jobComment.getFilepathsCSV()).getName() + "\">Click Here</a></td>\n";
+				jobDetails += "  </tr>\n";
+			}
+
+			jobDetails += "</table></br></br>\n";
+
+			String breadCrumb = "";
+			if(job == null) {
+				breadCrumb = BreadCrumbs.instance().href("/dashboard", "Dashboard").title("Jobs").toString();
+			} else {
+				breadCrumb = BreadCrumbs.instance().href("/dashboard", "Dashboard").href("/jobs", "Jobs").title(job.getTitle()).toString();
+			}
+
+			Result result = Results.html("dashboard_page_template").
+					put("content", jobDetails).
+					put("title", "The Mix Hub Online - Jobs").
+					put("breadcrumb", breadCrumb).
+					put("sidenav", SideNavigation.generate(req, account, SideNavigation.ActivePage.JOBS)).
+					put("full_name", account.getFirstname() + " " + account.getLastname()).
+					put("notification_count", Notifications.count(req, account)).
+					put("notification_list", Notifications.generate(req, account));
+			return result;
+		} else {
+			return Results.redirect("/dashboard");
+		}
+	}
+
 }

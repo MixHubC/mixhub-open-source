@@ -234,4 +234,26 @@ public class MySQL {
 	public static JobCommentSQL getJobComments(DataSource ds) {
 		return JobCommentSQL.newInstance(ds);
 	}
+
+	/**
+	 * Gets the invoice SQL controller
+	 */
+	public static InvoiceSQL getInvoices(DataSource ds) {
+		return InvoiceSQL.newInstance(ds);
+	}
+
+	/**
+	 * Gets the logging user SQL controller
+	 */
+	public static Logging_UserSQL getLoggingUser(DataSource ds) {
+		return Logging_UserSQL.newInstance(ds);
+	}
+
+	/**
+	 * Gets the logging system SQL controller
+	 */
+	public static Logging_SystemSQL getLoggingSystem(DataSource ds) {
+		return Logging_SystemSQL.newInstance(ds);
+	}
+
 }

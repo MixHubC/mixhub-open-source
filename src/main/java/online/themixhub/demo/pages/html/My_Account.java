@@ -201,89 +201,53 @@
  *    See the License for the specific language governing permissions and
  *    limitations under the License.
  */
-package online.themixhub.demo.sql.impl;
+package online.themixhub.demo.pages.html;
 
-import java.util.Date;
+import com.google.inject.Inject;
+import online.themixhub.demo.pages.html.generators.BreadCrumbs;
+import online.themixhub.demo.pages.html.generators.Notifications;
+import online.themixhub.demo.pages.html.generators.SideNavigation;
+import online.themixhub.demo.sql.MySQL;
+import online.themixhub.demo.sql.impl.Account;
+import online.themixhub.demo.utils.SessionUtils;
+import org.jooby.Request;
+import org.jooby.Result;
+import org.jooby.Results;
+import org.jooby.mvc.GET;
+import org.jooby.mvc.Path;
 
-/**
- * Used to define the job comment object
- *
- * @author The Mix Hub Online
- */
-public class JobComment {
+import javax.sql.DataSource;
+import java.io.IOException;
 
-	private int id;
-	private int job_id;
-	private int owner_id;
-	private String owner_ip;
-	private long date;
-	private String comment;
-	private String filepathsCSV;
-	private Date dateObject;
+@Path("/my-account")
+public class My_Account {
 
-    public int getId() {
-        return id;
-    }
+	private DataSource ds;
 
-    public void setId(int id) {
-        this.id = id;
-    }
-
-	public int getJob_id() {
-		return job_id;
+	//for when we use SQL
+	@Inject
+	public My_Account(DataSource ds) {
+		this.ds = ds;
 	}
 
-	public void setJob_id(int job_id) {
-		this.job_id = job_id;
-	}
+	@GET
+	public Result getPage(Request req) throws IOException {
+		SessionUtils.handleSessionDestroy(req);
+		if (!req.session().isSet("set")) {
+			return Results.redirect("/");
+		} else {
+			Account account = MySQL.getAccounts(ds).queryAccountFromID(req.session().get("id").intValue());
 
-	public long getDate() {
-		return date;
-	}
 
-	public void setDate(long date) {
-		this.date = date;
-		if(dateObject != null) {
-			dateObject = new Date(date);
+			Result result = Results.html("dashboard_page_template").
+					put("content", "Account Editing page coming soon.").
+					put("title", "The Mix Hub Online - My Account").
+					put("breadcrumb", BreadCrumbs.instance().href("/dashboard", "Dashboard").title("My Account")).
+					put("sidenav", SideNavigation.generate(req, account, SideNavigation.ActivePage.NONE)).
+					put("full_name", account.getFirstname() + " " + account.getLastname()).
+					put("notification_count", Notifications.count(req, account)).
+					put("notification_list", Notifications.generate(req, account));
+			return result;
 		}
-	}
-
-	public int getOwner_id() {
-		return owner_id;
-	}
-
-	public void setOwner_id(int parent_account_id) {
-		this.owner_id = parent_account_id;
-	}
-
-	public String getOwner_ip() {
-		return owner_ip;
-	}
-
-	public void setOwner_ip(String owner_ip) {
-		this.owner_ip = owner_ip;
-	}
-
-	public String getComment() {
-		return comment;
-	}
-
-	public void setComment(String comment) {
-		this.comment = comment;
-	}
-
-	public String getFilepathsCSV() {
-		return filepathsCSV;
-	}
-
-	public void setFilepathsCSV(String filepathsCSV) {
-		this.filepathsCSV = filepathsCSV;
-	}
-
-	public Date getDateObject () {
-		if(dateObject == null) {
-			dateObject = new Date(date);
-		}
-		return dateObject;
 	}
 }

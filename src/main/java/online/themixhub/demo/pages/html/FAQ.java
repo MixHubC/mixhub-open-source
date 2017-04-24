@@ -203,26 +203,51 @@
  */
 package online.themixhub.demo.pages.html;
 
+import com.google.inject.Inject;
+import online.themixhub.demo.pages.html.generators.BreadCrumbs;
+import online.themixhub.demo.pages.html.generators.Notifications;
+import online.themixhub.demo.pages.html.generators.SideNavigation;
+import online.themixhub.demo.sql.MySQL;
 import online.themixhub.demo.sql.impl.Account;
+import online.themixhub.demo.utils.SessionUtils;
 import org.jooby.Request;
+import org.jooby.Result;
+import org.jooby.Results;
+import org.jooby.mvc.GET;
+import org.jooby.mvc.Path;
 
-/**
- * Created by John on 4/7/2017.
- */
-public class Notifications {
+import javax.sql.DataSource;
+import java.io.IOException;
 
-	public static String generate(Request req, Account account) {
-		StringBuilder sb = new StringBuilder();
+@Path("/faq")
+public class FAQ {
 
-		sb.append("                        <ul>\n" +
-				"                            <li class=\"active-notification\"><i class=\"fa fa-user\" aria-hidden=\"true\"></i> New order received <span class=\"float-right grey-text\"><i class=\"fa fa-clock-o\" aria-hidden=\"true\"></i> 13 min</span></li>\n" +
-				"                            <li class=\"active-notification\"><i class=\"fa fa-life-saver\" aria-hidden=\"true\"></i> Something else <span class=\"float-right grey-text\"><i class=\"fa fa-clock-o\" aria-hidden=\"true\"></i> 1 day</span></li>\n" +
-				"                        </ul>");
+	private DataSource ds;
 
-		return sb.toString();
+	//for when we use SQL
+	@Inject
+	public FAQ(DataSource ds) {
+		this.ds = ds;
 	}
 
-	public static int count(Request req, Account account) {
-		return 2;
+	@GET
+	public Result getPage(Request req) throws IOException {
+		SessionUtils.handleSessionDestroy(req);
+		if (!req.session().isSet("set")) {
+			return Results.redirect("/");
+		} else {
+			Account account = MySQL.getAccounts(ds).queryAccountFromID(req.session().get("id").intValue());
+
+
+			Result result = Results.html("dashboard_page_template").
+					put("content", "FAQ coming soon.").
+					put("title", "The Mix Hub Online - FAQ").
+					put("breadcrumb", BreadCrumbs.instance().href("/dashboard", "Dashboard").title("FAQ")).
+					put("sidenav", SideNavigation.generate(req, account, SideNavigation.ActivePage.FAQ)).
+					put("full_name", account.getFirstname() + " " + account.getLastname()).
+					put("notification_count", Notifications.count(req, account)).
+					put("notification_list", Notifications.generate(req, account));
+			return result;
+		}
 	}
 }

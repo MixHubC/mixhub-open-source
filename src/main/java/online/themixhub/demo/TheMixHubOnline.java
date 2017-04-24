@@ -203,6 +203,8 @@
  */
 package online.themixhub.demo;
 
+import online.themixhub.demo.sql.MySQL;
+import online.themixhub.demo.utils.LoggingUtil;
 import org.jooby.Jooby;
 import org.jooby.Results;
 import org.jooby.hbs.Hbs;
@@ -212,8 +214,15 @@ import online.themixhub.demo.utils.MiscUtils;
 import online.themixhub.demo.pages.*;
 import online.themixhub.demo.pages.html.*;
 
+import javax.sql.DataSource;
+
 /**
  * An example Jooby App using the MVC API
+ *
+ * TODO:
+ * 			http://localhost:8080/jobs?id=12 add date to the table
+ * 			Date is fucking deprecated change all instaces of it to TimeDate or Calendar
+ * 			Fix the styling for buttons on invoicing so the background can be clicked
  *
  * @author The Mix Hub Online
  */
@@ -238,6 +247,9 @@ public class TheMixHubOnline extends Jooby {
 		 * Error handling such as 403, 404 and 500
 		 */
 		err((req, rsp, err) -> {
+			DataSource ds = require(DataSource.class);
+			LoggingUtil.insertSystemLog(ds, rsp.status().get().toString(), MiscUtils.exceptionToString(err));
+
 			if (rsp.status().get().toString().equals("Not Found (404)")) {
 				rsp.send(Results.html("404"));
 			} else {
@@ -256,6 +268,7 @@ public class TheMixHubOnline extends Jooby {
 					
 					CriticalDiskLogger.logException(err); //log all errors to disk to review at a later date
 				}*/
+
 				rsp.send(Results.html("500").
 						put("stacktrace", MiscUtils.exceptionToString(err))); //NOTE, this is extremely unsafe for production, add a check in the future
 			}
@@ -288,6 +301,13 @@ public class TheMixHubOnline extends Jooby {
 		use(Job_Progress_Engineer.class);
 		use(Job_Progress_User.class);
 		use(Job_Finish_User.class);
+		use(Invoices.class);
+		use(Support.class);
+		use(My_Account.class);
+		use(Contact_Us.class);
+		use(FAQ.class);
+		use(Create_Invoice.class);
+		use(Pay_Invoice.class);
 		
 		/**
 		 * Schedule tasks

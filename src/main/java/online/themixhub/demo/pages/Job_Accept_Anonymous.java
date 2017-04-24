@@ -244,9 +244,9 @@ public class Job_Accept_Anonymous {
 					MySQL.getJobs(ds).acceptJob(id, account.getId(), true);
 
 					JobComment newComment = new JobComment();
-					newComment.setParent_account_id(account.getId());
-					newComment.setReply_to_id(-1);
-					newComment.setParent_job_id(id);
+					newComment.setOwner_id(account.getId());
+					newComment.setOwner_ip(req.ip());
+					newComment.setJob_id(id);
 					newComment.setComment("Hello, I'm your mix hub engineer! I am currently reviewing your submitted mix.");
 
 					MySQL.getJobComments(ds).insert(newComment);

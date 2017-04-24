@@ -206,7 +206,6 @@ package online.themixhub.demo.sql.impl;
 import org.springframework.jdbc.core.JdbcTemplate;
 
 import javax.sql.DataSource;
-import java.io.File;
 import java.util.List;
 
 /**
@@ -224,7 +223,7 @@ public class JobCommentSQL {
 		if(thisSQL == null) {
 			thisSQL = new JobCommentSQL();
 			thisSQL.ds = ds;
-			thisSQL.sql =  new JdbcTemplate(ds);
+			thisSQL.sql = new JdbcTemplate(ds);
 		}
 		return thisSQL;
 	}
@@ -250,7 +249,7 @@ public class JobCommentSQL {
 	 * Returns a job comment list by parent_job_id, returns null if none
 	 */
 	public synchronized List<JobComment> queryAllFromJobID(int jobID) {
-		String query = "SELECT * FROM job_comments WHERE parent_job_id = ?";
+		String query = "SELECT * FROM job_comments WHERE job_id = ?";
 		List<JobComment> jobComments = sql.query(query,
 				new Object[]{jobID},
 				new JobCommentMapper()
@@ -284,21 +283,21 @@ public class JobCommentSQL {
 
 		String query = "INSERT INTO job_comments (" +
 				"date, " +
-				"reply_to_id, " +
-				"parent_account_id, " +
-				"parent_job_id, " +
+				"owner_id, " +
+				"owner_ip, " +
+				"job_id, " +
 				"comment, " +
-				"filepaths" +
+				"filepathsCSV" +
 				")" +
 				" values (?, ?, ?, ?, ?, ?)";
 		sql.update(query,
 				new Object[]{
 						now,
-						comment.getReply_to_id(),
-						comment.getParent_account_id(),
-						comment.getParent_job_id(),
+						comment.getOwner_id(),
+						comment.getOwner_ip(),
+						comment.getJob_id(),
 						comment.getComment(),
-						comment.getFilepaths()
+						comment.getFilepathsCSV()
 				}
 		);
 

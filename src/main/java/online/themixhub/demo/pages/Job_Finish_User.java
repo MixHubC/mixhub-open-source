@@ -205,14 +205,13 @@ package online.themixhub.demo.pages;
 
 import com.google.inject.Inject;
 import online.themixhub.demo.pages.forms.JobFinishUserForm;
-import online.themixhub.demo.pages.forms.JobProgressEngineerForm;
 import online.themixhub.demo.sql.MySQL;
 import online.themixhub.demo.sql.impl.Account;
 import online.themixhub.demo.sql.impl.Job;
 import online.themixhub.demo.sql.impl.JobComment;
 import online.themixhub.demo.utils.PermissionUtils;
 import online.themixhub.demo.utils.SessionUtils;
-import online.themixhub.demo.utils.Stage;
+import online.themixhub.demo.logic.Stage;
 
 import org.jooby.Request;
 import org.jooby.Result;
@@ -252,9 +251,9 @@ public class Job_Finish_User {
 
 				JobComment newComment = new JobComment();
 				newComment.setComment("This is great! I'm satisfied, Thank you.");
-				newComment.setParent_account_id(account.getId());
-				newComment.setReply_to_id(-1);
-				newComment.setParent_job_id(id);
+				newComment.setOwner_id(account.getId());
+				newComment.setOwner_ip(req.ip());
+				newComment.setJob_id(id);
 				MySQL.getJobComments(ds).insert(newComment);
 
 				return Results.redirect("/jobs?id=" + id);

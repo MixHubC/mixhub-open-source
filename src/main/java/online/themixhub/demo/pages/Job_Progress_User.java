@@ -249,9 +249,9 @@ public class Job_Progress_User {
 
 				JobComment newComment = new JobComment();
 				newComment.setComment("Hey I'd like to request a revision change.");
-				newComment.setParent_account_id(account.getId());
-				newComment.setReply_to_id(-1);
-				newComment.setParent_job_id(id);
+				newComment.setOwner_id(account.getId());
+				newComment.setOwner_ip(req.ip());
+				newComment.setJob_id(id);
 				MySQL.getJobComments(ds).insert(newComment);
 
 				return Results.redirect("/jobs?id=" + id);
