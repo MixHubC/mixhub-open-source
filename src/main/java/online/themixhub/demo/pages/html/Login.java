@@ -204,7 +204,6 @@
 package online.themixhub.demo.pages.html;
 
 import com.google.inject.Inject;
-import com.sun.javafx.util.Logging;
 import online.themixhub.demo.utils.LoggingUtil;
 import online.themixhub.demo.utils.SessionUtils;
 import online.themixhub.demo.pages.forms.LoginForm;
